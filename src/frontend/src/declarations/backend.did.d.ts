@@ -1,4 +1,4 @@
- 
+/* eslint-disable */
 
 // @ts-nocheck
 
@@ -65,6 +65,20 @@ export interface Notification {
     { 'customers' : null },
   'timestamp' : bigint,
 }
+export interface Order {
+  'id' : string,
+  'status' : string,
+  'measurementsJson' : string,
+  'tailorId' : string,
+  'customerPrincipal' : string,
+  'customizationJson' : string,
+  'estimatedDeliveryDate' : string,
+  'orderDate' : bigint,
+  'category' : string,
+  'listingTitle' : string,
+  'totalPrice' : number,
+  'adminNotes' : string,
+}
 export interface PlatformConfig {
   'promotions' : Array<Promotion>,
   'fabrics' : Array<Fabric>,
@@ -96,6 +110,21 @@ export interface Promotion {
   'applicableCategories' : Array<string>,
   'validUntil' : bigint,
 }
+export interface TailorProfile {
+  'id' : string,
+  'bio' : string,
+  'portfolioJson' : string,
+  'turnaroundDays' : bigint,
+  'ownerName' : string,
+  'isPremium' : boolean,
+  'city' : string,
+  'contactEmail' : string,
+  'shopName' : string,
+  'specialties' : string,
+  'basePricing' : number,
+  'profileImageUrl' : string,
+  'contactPhone' : string,
+}
 export interface TextStyle {
   'weight' : FontWeight,
   'font' : string,
@@ -106,18 +135,22 @@ export interface UserApprovalInfo {
   'status' : ApprovalStatus,
   'principal' : Principal,
 }
-export interface UserProfile {
+export interface UserProfileInput {
+  'measurementsJson' : string,
   'preferredLanguage' : string,
   'city' : string,
   'name' : string,
-  'measurements' : Array<Measurement>,
+  'role' : string,
+  'measurements' : Array<MeasurementInput>,
   'phoneNumber' : string,
 }
-export interface UserProfileInput {
+export interface UserProfileV2 {
+  'measurementsJson' : string,
   'preferredLanguage' : string,
   'city' : string,
   'name' : string,
-  'measurements' : Array<MeasurementInput>,
+  'role' : string,
+  'measurements' : Array<Measurement>,
   'phoneNumber' : string,
 }
 export type UserRole = { 'admin' : null } |
@@ -158,19 +191,30 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'createNotification' : ActorMethod<[Notification], undefined>,
+  'getAllOrders' : ActorMethod<[], Array<Order>>,
+  'getAllTailorProfiles' : ActorMethod<[], Array<TailorProfile>>,
+  'getCallerUserProfile' : ActorMethod<[], [] | [UserProfileV2]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getDefaultAppStyle' : ActorMethod<[], AppStyle>,
+  'getMyOrders' : ActorMethod<[], Array<Order>>,
   'getNotifications' : ActorMethod<[bigint], Array<Notification>>,
   'getPlatformConfig' : ActorMethod<[], [] | [PlatformConfig]>,
-  'getUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getUserProfileByPrincipal' : ActorMethod<[Principal], [] | [UserProfile]>,
+  'getTailorProfile' : ActorMethod<[string], [] | [TailorProfile]>,
+  'getUserProfile' : ActorMethod<[], [] | [UserProfileV2]>,
+  'getUserProfileByPrincipal' : ActorMethod<[Principal], [] | [UserProfileV2]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'isCallerApproved' : ActorMethod<[], boolean>,
   'listApprovals' : ActorMethod<[], Array<UserApprovalInfo>>,
+  'placeOrder' : ActorMethod<[Order], string>,
   'requestApproval' : ActorMethod<[], undefined>,
+  'saveCallerUserProfile' : ActorMethod<[UserProfileInput], undefined>,
+  'saveTailorProfile' : ActorMethod<[TailorProfile], undefined>,
   'saveUserProfile' : ActorMethod<[UserProfileInput], undefined>,
   'setApproval' : ActorMethod<[Principal, ApprovalStatus], undefined>,
+  'setOrderDeliveryDate' : ActorMethod<[string, string], undefined>,
+  'updateOrderStatus' : ActorMethod<[string, string, string], undefined>,
   'updatePlatformConfig' : ActorMethod<[PlatformConfig], undefined>,
+  'updateUserRole' : ActorMethod<[string], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

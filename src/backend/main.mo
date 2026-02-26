@@ -5,6 +5,7 @@ import Text "mo:core/Text";
 import Runtime "mo:core/Runtime";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
+import Migration "migration";
 
 import AccessControl "authorization/access-control";
 import UserApproval "user-approval/approval";
@@ -12,8 +13,9 @@ import Blob "blob-storage/Storage";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 
+(with migration = Migration.run)
 actor {
-  // Core Types
+  // Types
   type FontWeight = {
     #light;
     #normal;
@@ -55,7 +57,6 @@ actor {
     backgroundImage : ?Blob.ExternalBlob;
   };
 
-  // Platform Config Types
   type PlatformConfig = {
     products : [Product];
     fabrics : [Fabric];
@@ -145,12 +146,14 @@ actor {
     value : Float;
   };
 
-  type UserProfile = {
+  type UserProfileV2 = {
     name : Text;
     phoneNumber : Text;
     city : Text;
     preferredLanguage : Text;
     measurements : [Measurement];
+    measurementsJson : Text;
+    role : Text;
   };
 
   type UserProfileInput = {
@@ -159,18 +162,51 @@ actor {
     city : Text;
     preferredLanguage : Text;
     measurements : [MeasurementInput];
+    measurementsJson : Text;
+    role : Text;
   };
 
-  // Initialize the user system state
+  type Order = {
+    id : Text;
+    customerPrincipal : Text;
+    tailorId : Text;
+    listingTitle : Text;
+    category : Text;
+    totalPrice : Float;
+    orderDate : Int;
+    status : Text;
+    estimatedDeliveryDate : Text;
+    adminNotes : Text;
+    customizationJson : Text;
+    measurementsJson : Text;
+  };
+
+  type TailorProfile = {
+    id : Text;
+    shopName : Text;
+    ownerName : Text;
+    city : Text;
+    bio : Text;
+    specialties : Text;
+    basePricing : Float;
+    turnaroundDays : Nat;
+    isPremium : Bool;
+    contactPhone : Text;
+    contactEmail : Text;
+    profileImageUrl : Text;
+    portfolioJson : Text;
+  };
+
+  // State
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
   include MixinStorage();
 
-  // Approval State
   let approvalState = UserApproval.initState(accessControlState);
 
-  // Persistent Data Structures
-  let userProfiles = Map.empty<Principal, UserProfile>();
+  let userProfiles = Map.empty<Principal, UserProfileV2>();
+  let orders = Map.empty<Text, Order>();
+  let tailorProfiles = Map.empty<Text, TailorProfile>();
   var platformConfig : ?PlatformConfig = null;
   let notifications = List.empty<Notification>();
 
@@ -189,25 +225,62 @@ actor {
       }
     );
 
-    let userProfile : UserProfile = {
+    let userProfile : UserProfileV2 = {
       name = profileInput.name;
       phoneNumber = profileInput.phoneNumber;
       city = profileInput.city;
       preferredLanguage = profileInput.preferredLanguage;
       measurements;
+      measurementsJson = profileInput.measurementsJson;
+      role = profileInput.role;
     };
 
     userProfiles.add(caller, userProfile);
   };
 
-  public query ({ caller }) func getUserProfile() : async ?UserProfile {
+  public query ({ caller }) func getUserProfile() : async ?UserProfileV2 {
     if (not (UserApproval.isApproved(approvalState, caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only approved users can perform this action");
     };
     userProfiles.get(caller);
   };
 
-  public query ({ caller }) func getUserProfileByPrincipal(user : Principal) : async ?UserProfile {
+  // Frontend compatibility functions
+  public query ({ caller }) func getCallerUserProfile() : async ?UserProfileV2 {
+    if (not (UserApproval.isApproved(approvalState, caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only approved users can perform this action");
+    };
+    userProfiles.get(caller);
+  };
+
+  public shared ({ caller }) func saveCallerUserProfile(profileInput : UserProfileInput) : async () {
+    if (not (UserApproval.isApproved(approvalState, caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only approved users can perform this action");
+    };
+
+    let measurements = profileInput.measurements.map(
+      func(m) {
+        {
+          name = m.name;
+          value = m.value;
+        };
+      }
+    );
+
+    let userProfile : UserProfileV2 = {
+      name = profileInput.name;
+      phoneNumber = profileInput.phoneNumber;
+      city = profileInput.city;
+      preferredLanguage = profileInput.preferredLanguage;
+      measurements;
+      measurementsJson = profileInput.measurementsJson;
+      role = profileInput.role;
+    };
+
+    userProfiles.add(caller, userProfile);
+  };
+
+  public query ({ caller }) func getUserProfileByPrincipal(user : Principal) : async ?UserProfileV2 {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
@@ -265,6 +338,119 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
     UserApproval.listApprovals(approvalState);
+  };
+
+  // Orders Management
+  public shared ({ caller }) func placeOrder(order : Order) : async Text {
+    if (not (UserApproval.isApproved(approvalState, caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only approved users can perform this action");
+    };
+
+    orders.add(order.id, order);
+    order.id;
+  };
+
+  public query ({ caller }) func getMyOrders() : async [Order] {
+    if (not (UserApproval.isApproved(approvalState, caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only approved users can perform this action");
+    };
+
+    let principalText = caller.toText();
+    orders.filter(
+      func(_k, o) { o.customerPrincipal == principalText }
+    ).values().toArray();
+  };
+
+  public query ({ caller }) func getAllOrders() : async [Order] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+    orders.values().toArray();
+  };
+
+  public shared ({ caller }) func updateOrderStatus(orderId : Text, newStatus : Text, adminNote : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    switch (orders.get(orderId)) {
+      case (null) {
+        Runtime.trap("Order not found");
+      };
+      case (?order) {
+        let updatedOrder = {
+          order with
+          status = newStatus;
+          adminNotes = adminNote;
+        };
+        orders.add(orderId, updatedOrder);
+
+        // Create notification for customer
+        let notification : Notification = {
+          id = orderId # "-status";
+          title = "Order Status Updated";
+          body = "Your order status was changed to: " # newStatus;
+          targetAudience = #customers;
+          timestamp = 0;
+        };
+        notifications.add(notification);
+      };
+    };
+  };
+
+  public shared ({ caller }) func setOrderDeliveryDate(orderId : Text, deliveryDate : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can perform this action");
+    };
+
+    switch (orders.get(orderId)) {
+      case (null) {
+        Runtime.trap("Order not found");
+      };
+      case (?order) {
+        let updatedOrder = {
+          order with
+          estimatedDeliveryDate = deliveryDate;
+        };
+        orders.add(orderId, updatedOrder);
+      };
+    };
+  };
+
+  // Tailor Profile Management
+  public shared ({ caller }) func saveTailorProfile(profile : TailorProfile) : async () {
+    if (not (UserApproval.isApproved(approvalState, caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only approved users can perform this action");
+    };
+    tailorProfiles.add(profile.id, profile);
+  };
+
+  public query func getTailorProfile(tailorId : Text) : async ?TailorProfile {
+    tailorProfiles.get(tailorId);
+  };
+
+  public query func getAllTailorProfiles() : async [TailorProfile] {
+    tailorProfiles.values().toArray();
+  };
+
+  // User Role Management
+  public shared ({ caller }) func updateUserRole(role : Text) : async () {
+    if (not (UserApproval.isApproved(approvalState, caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only approved users can perform this action");
+    };
+
+    switch (userProfiles.get(caller)) {
+      case (null) {
+        Runtime.trap("User profile not found. Please create a profile first.");
+      };
+      case (?profile) {
+        let updatedProfile = {
+          profile with
+          role = role;
+        };
+        userProfiles.add(caller, updatedProfile);
+      };
+    };
   };
 
   // Helper Functions for Default Configurations
@@ -328,7 +514,7 @@ actor {
     };
   };
 
-  public query ({ caller }) func getDefaultAppStyle() : async AppStyle {
+  public query func getDefaultAppStyle() : async AppStyle {
     {
       colors = getDefaultColorScheme();
       fonts = getDefaultFontStyles();

@@ -1987,12 +1987,19 @@ export default function AdminPanel() {
   const [activeSection, setActiveSection] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customizationPanelOpen, setCustomizationPanelOpen] = useState(false);
+  const [showAdminClaim, setShowAdminClaim] = useState(false);
+  const [claimEmail, setClaimEmail] = useState('');
 
   // Initialize localStorage defaults
   useEffect(() => { initLocalStorage(); }, []);
 
+  // CRITICAL FIX 1: Client-side admin email check
+  const ADMIN_EMAIL = 'FUTURETAILORSFORYOU@gmail.com';
+  const storedEmail = localStorage.getItem('userEmail') || localStorage.getItem('adminEmail') || '';
+  const isEmailAdmin = storedEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
   // Check admin role
-  const { data: isAdmin, isLoading: checkingAdmin } = useQuery({
+  const { data: isAdminBackend, isLoading: checkingAdmin } = useQuery({
     queryKey: ['isAdmin'],
     queryFn: async () => {
       if (!actor) return false;
@@ -2000,6 +2007,9 @@ export default function AdminPanel() {
     },
     enabled: !!actor && !!identity,
   });
+
+  // Combine email-based and backend-based admin check
+  const isAdmin = isEmailAdmin || isAdminBackend;
 
   // Fetch approvals
   const { data: approvals = [], refetch: refetchApprovals } = useQuery({
@@ -2010,6 +2020,14 @@ export default function AdminPanel() {
     },
     enabled: !!actor && !!identity && !!isAdmin,
   });
+
+  const handleClaimAdmin = () => {
+    if (claimEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      localStorage.setItem('adminEmail', claimEmail);
+      setShowAdminClaim(false);
+      window.location.reload();
+    }
+  };
 
   if (!identity) {
     return (
@@ -2025,7 +2043,7 @@ export default function AdminPanel() {
     );
   }
 
-  if (checkingAdmin) {
+  if (checkingAdmin && !isEmailAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -2036,15 +2054,39 @@ export default function AdminPanel() {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !showAdminClaim) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="border-0 shadow-xl p-8 text-center max-w-sm">
+        <Card className="border-0 shadow-xl p-8 text-center max-w-md">
           <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
             <XCircle className="w-8 h-8 text-destructive" />
           </div>
           <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You don't have admin privileges to access this dashboard.</p>
+          <p className="text-muted-foreground mb-4">You don't have admin privileges to access this dashboard.</p>
+          <Button onClick={() => setShowAdminClaim(true)}>I am the Admin - Click to Claim Access</Button>
+        </Card>
+      </div>
+    );
+  }
+
+  if (showAdminClaim) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="border-0 shadow-xl p-8 max-w-md">
+          <h2 className="text-xl font-bold mb-4">Claim Admin Access</h2>
+          <p className="text-sm text-muted-foreground mb-4">Enter your admin email to verify your identity:</p>
+          <Input 
+            type="email" 
+            placeholder="Enter admin email" 
+            value={claimEmail}
+            onChange={(e) => setClaimEmail(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleClaimAdmin()}
+            className="mb-4"
+          />
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowAdminClaim(false)}>Cancel</Button>
+            <Button onClick={handleClaimAdmin} disabled={!claimEmail.trim()}>Verify & Access</Button>
+          </div>
         </Card>
       </div>
     );

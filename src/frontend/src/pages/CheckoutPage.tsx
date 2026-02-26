@@ -4,11 +4,15 @@ import { useLanguage } from '../hooks/useLanguage';
 import { useCart } from '../hooks/useCart';
 import { useOrders } from '../hooks/useOrders';
 import { useMeasurements } from '../hooks/useMeasurements';
+import { useActor } from '../hooks/useActor';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
 import { LuxuryCard } from '../components/LuxuryCard';
 import { LuxuryButton } from '../components/LuxuryButton';
 import { MeasurementProfileSelector } from '../components/MeasurementProfileSelector';
-import { CheckCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { OrderConfirmationModal } from '../components/OrderConfirmationModal';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 type Step = 'review' | 'measurements' | 'confirm';
 
@@ -20,10 +24,13 @@ export function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart();
   const { createOrder } = useOrders();
   const { profiles } = useMeasurements();
+  const { actor } = useActor();
+  const { identity } = useInternetIdentity();
   const [step, setStep] = useState<Step>('review');
   const [selectedMeasurementId, setSelectedMeasurementId] = useState('');
   const [loading, setLoading] = useState(false);
   const [orderId, setOrderId] = useState('');
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const stepLabels: Record<Step, string> = {
     review: t('checkout.review'),
@@ -39,6 +46,8 @@ export function CheckoutPage() {
     setLoading(true);
     try {
       const firstItem = items[0];
+      
+      // Create order locally first
       const order = createOrder({
         tailorId: firstItem.listing.tailorId,
         tailorName: firstItem.listing.tailorName,
@@ -49,9 +58,39 @@ export function CheckoutPage() {
         measurementSnapshot: measurement,
         price: totalPrice,
       });
+      
+      // Save to backend if available
+      if (actor && identity) {
+        try {
+          await actor.placeOrder({
+            id: order.id,
+            customerPrincipal: identity.getPrincipal().toString(),
+            tailorId: firstItem.listing.tailorId,
+            listingTitle: firstItem.listing.title,
+            category: firstItem.listing.category,
+            totalPrice: totalPrice,
+            orderDate: BigInt(Date.now()),
+            status: 'pending',
+            estimatedDeliveryDate: '',
+            adminNotes: '',
+            customizationJson: JSON.stringify(firstItem.customization),
+            measurementsJson: JSON.stringify(measurement),
+          });
+        } catch (error) {
+          console.error('Backend order save failed:', error);
+          // Still proceed with local order
+        }
+      }
+      
       setOrderId(order.id);
       clearCart();
+      setShowConfirmation(true);
       setStep('confirm');
+      
+      toast.success('Order placed successfully!');
+    } catch (error) {
+      console.error('Order placement failed:', error);
+      toast.error('Failed to place order. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -99,7 +138,7 @@ export function CheckoutPage() {
 
       {/* Step: Review */}
       {step === 'review' && (
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pb-[100px]" style={{ scrollMarginBottom: '200px' }}>
           {items.map(item => (
             <LuxuryCard key={item.id} className="p-5">
               <div className="flex gap-4">
@@ -135,7 +174,7 @@ export function CheckoutPage() {
 
       {/* Step: Measurements */}
       {step === 'measurements' && (
-        <div className="space-y-6">
+        <div className="space-y-6 max-h-[calc(100vh-300px)] overflow-y-auto pb-[100px]" style={{ scrollMarginBottom: '200px' }}>
           <LuxuryCard className="p-6">
             <h2 className="font-serif text-xl font-semibold mb-4">{t('checkout.measurements')}</h2>
             <MeasurementProfileSelector value={selectedMeasurementId} onChange={setSelectedMeasurementId} />
@@ -168,23 +207,18 @@ export function CheckoutPage() {
         </div>
       )}
 
-      {/* Step: Success */}
+      {/* Step: Success - Hidden, modal shows instead */}
       {step === 'confirm' && (
-        <LuxuryCard className="p-10 text-center">
-          <CheckCircle className="h-16 w-16 text-primary mx-auto mb-4" />
-          <h2 className="font-serif text-2xl font-bold mb-2">{t('checkout.success')}</h2>
-          <p className="text-muted-foreground mb-2">{t('checkout.orderPlaced')}</p>
-          {orderId && <p className="text-sm font-mono text-muted-foreground mb-6">Order ID: {orderId}</p>}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <LuxuryButton variant="primary" onClick={() => navigate({ to: '/orders' })}>
-              View My Orders
-            </LuxuryButton>
-            <LuxuryButton variant="outline" onClick={() => navigate({ to: '/catalog' })}>
-              Continue Shopping
-            </LuxuryButton>
-          </div>
-        </LuxuryCard>
+        <div className="hidden" />
       )}
+      
+      {/* Order Confirmation Modal */}
+      <OrderConfirmationModal
+        open={showConfirmation}
+        orderId={orderId}
+        onViewOrders={() => navigate({ to: '/orders' })}
+        onContinueShopping={() => navigate({ to: '/catalog' })}
+      />
     </div>
   );
 }

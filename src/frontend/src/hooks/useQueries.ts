@@ -92,6 +92,8 @@ export function useSaveCallerUserProfile() {
             phoneNumber: profile.phone,
             city: profile.city,
             preferredLanguage: profile.preferredLanguage,
+            measurementsJson: JSON.stringify(profile.measurements || []),
+            role: profile.role || 'customer',
             measurements: profile.measurements?.map(m => ({ name: m.name, value: m.value })) ?? [],
           });
         } catch (err) {

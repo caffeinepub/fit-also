@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useGetPlatformConfig, useUpdatePlatformConfig } from '../hooks/useQueries';
 import { Loader2, Save, Plus, Trash2, Edit, X } from 'lucide-react';
@@ -27,6 +28,22 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
   const [cities, setCities] = useState(config?.cities || []);
   const [banners, setBanners] = useState(config?.banners || []);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [addProductOpen, setAddProductOpen] = useState(false);
+  const [newProduct, setNewProduct] = useState<{
+    title: string;
+    category: string;
+    price: string;
+    description: string;
+    imageFile: File | null;
+    imagePreview: string;
+  }>({
+    title: '',
+    category: 'Saree Blouse',
+    price: '',
+    description: '',
+    imageFile: null,
+    imagePreview: '',
+  });
 
   // Sync state with config when it loads
   React.useEffect(() => {
@@ -78,6 +95,65 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
       toast.error('Failed to update platform configuration');
     }
   };
+  
+  const handleAddProduct = async () => {
+    if (!newProduct.title.trim() || !newProduct.price) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+    
+    try {
+      // Convert image to base64 if file provided
+      let imageBlob = config?.products[0]?.image; // Default placeholder
+      if (newProduct.imageFile) {
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(newProduct.imageFile!);
+        });
+        imageBlob = ExternalBlob.fromURL(base64);
+      }
+      
+      const product: Product = {
+        id: crypto.randomUUID(),
+        title: newProduct.title,
+        category: newProduct.category,
+        price: parseFloat(newProduct.price) || 0,
+        description: newProduct.description,
+        image: imageBlob || ExternalBlob.fromURL('/assets/generated/garment-placeholder.dim_400x500.png'),
+        tailorId: 'admin',
+        customizationOptions: {
+          neckStyles: [],
+          sleeveStyles: [],
+          fabricTypes: [],
+          colorPatterns: [],
+          workTypes: [],
+        },
+      };
+      
+      setProducts([...products, product]);
+      setAddProductOpen(false);
+      setNewProduct({
+        title: '',
+        category: 'Saree Blouse',
+        price: '',
+        description: '',
+        imageFile: null,
+        imagePreview: '',
+      });
+      toast.success('Product added! Remember to save changes.');
+    } catch (error) {
+      toast.error('Failed to add product');
+    }
+  };
+  
+  const handleProductImageUpload = (file: File) => {
+    setNewProduct(prev => ({
+      ...prev,
+      imageFile: file,
+      imagePreview: URL.createObjectURL(file),
+    }));
+  };
 
   if (!config) return null;
 
@@ -95,9 +171,7 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Products ({products.length})</CardTitle>
-                  <Button size="sm" onClick={() => {
-                    toast.info('Add Product functionality - coming soon');
-                  }}>
+                  <Button size="sm" onClick={() => setAddProductOpen(true)}>
                     <Plus className="h-4 w-4 mr-1" />
                     Add Product
                   </Button>
@@ -259,6 +333,82 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
           </Button>
         </div>
       </DialogContent>
+      
+      {/* Add Product Dialog */}
+      <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Add New Product</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Product Title *</Label>
+              <Input 
+                value={newProduct.title} 
+                onChange={e => setNewProduct(p => ({ ...p, title: e.target.value }))}
+                placeholder="e.g. Premium Silk Saree Blouse"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Category *</Label>
+                <Select value={newProduct.category} onValueChange={v => setNewProduct(p => ({ ...p, category: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Saree Blouse">Saree Blouse</SelectItem>
+                    <SelectItem value="Salwar Kameez">Salwar Kameez</SelectItem>
+                    <SelectItem value="Lehenga">Lehenga</SelectItem>
+                    <SelectItem value="Kurta">Kurta</SelectItem>
+                    <SelectItem value="Sherwani">Sherwani</SelectItem>
+                    <SelectItem value="Suit">Suit</SelectItem>
+                    <SelectItem value="Dress">Dress</SelectItem>
+                    <SelectItem value="Skirt">Skirt</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Price (₹) *</Label>
+                <Input 
+                  type="number" 
+                  value={newProduct.price} 
+                  onChange={e => setNewProduct(p => ({ ...p, price: e.target.value }))}
+                  placeholder="1500"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Description</Label>
+              <Textarea 
+                value={newProduct.description} 
+                onChange={e => setNewProduct(p => ({ ...p, description: e.target.value }))}
+                placeholder="Describe the product..."
+                rows={3}
+              />
+            </div>
+            <div>
+              <Label>Product Image</Label>
+              <div className="mt-2 space-y-2">
+                {newProduct.imagePreview && (
+                  <img src={newProduct.imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleProductImageUpload(file);
+                  }}
+                  className="block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddProductOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddProduct}>Add Product</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

@@ -1,4 +1,4 @@
- 
+/* eslint-disable */
 
 // @ts-nocheck
 
@@ -34,6 +34,48 @@ export const Notification = IDL.Record({
     'customers' : IDL.Null,
   }),
   'timestamp' : IDL.Int,
+});
+export const Order = IDL.Record({
+  'id' : IDL.Text,
+  'status' : IDL.Text,
+  'measurementsJson' : IDL.Text,
+  'tailorId' : IDL.Text,
+  'customerPrincipal' : IDL.Text,
+  'customizationJson' : IDL.Text,
+  'estimatedDeliveryDate' : IDL.Text,
+  'orderDate' : IDL.Int,
+  'category' : IDL.Text,
+  'listingTitle' : IDL.Text,
+  'totalPrice' : IDL.Float64,
+  'adminNotes' : IDL.Text,
+});
+export const TailorProfile = IDL.Record({
+  'id' : IDL.Text,
+  'bio' : IDL.Text,
+  'portfolioJson' : IDL.Text,
+  'turnaroundDays' : IDL.Nat,
+  'ownerName' : IDL.Text,
+  'isPremium' : IDL.Bool,
+  'city' : IDL.Text,
+  'contactEmail' : IDL.Text,
+  'shopName' : IDL.Text,
+  'specialties' : IDL.Text,
+  'basePricing' : IDL.Float64,
+  'profileImageUrl' : IDL.Text,
+  'contactPhone' : IDL.Text,
+});
+export const Measurement = IDL.Record({
+  'value' : IDL.Float64,
+  'name' : IDL.Text,
+});
+export const UserProfileV2 = IDL.Record({
+  'measurementsJson' : IDL.Text,
+  'preferredLanguage' : IDL.Text,
+  'city' : IDL.Text,
+  'name' : IDL.Text,
+  'role' : IDL.Text,
+  'measurements' : IDL.Vec(Measurement),
+  'phoneNumber' : IDL.Text,
 });
 export const FontWeight = IDL.Variant({
   'normal' : IDL.Null,
@@ -122,17 +164,6 @@ export const PlatformConfig = IDL.Record({
   'products' : IDL.Vec(Product),
   'workTypes' : IDL.Vec(WorkType),
 });
-export const Measurement = IDL.Record({
-  'value' : IDL.Float64,
-  'name' : IDL.Text,
-});
-export const UserProfile = IDL.Record({
-  'preferredLanguage' : IDL.Text,
-  'city' : IDL.Text,
-  'name' : IDL.Text,
-  'measurements' : IDL.Vec(Measurement),
-  'phoneNumber' : IDL.Text,
-});
 export const ApprovalStatus = IDL.Variant({
   'pending' : IDL.Null,
   'approved' : IDL.Null,
@@ -147,9 +178,11 @@ export const MeasurementInput = IDL.Record({
   'name' : IDL.Text,
 });
 export const UserProfileInput = IDL.Record({
+  'measurementsJson' : IDL.Text,
   'preferredLanguage' : IDL.Text,
   'city' : IDL.Text,
   'name' : IDL.Text,
+  'role' : IDL.Text,
   'measurements' : IDL.Vec(MeasurementInput),
   'phoneNumber' : IDL.Text,
 });
@@ -184,23 +217,38 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'createNotification' : IDL.Func([Notification], [], []),
+  'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+  'getAllTailorProfiles' : IDL.Func([], [IDL.Vec(TailorProfile)], ['query']),
+  'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfileV2)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getDefaultAppStyle' : IDL.Func([], [AppStyle], ['query']),
+  'getMyOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
   'getNotifications' : IDL.Func([IDL.Int], [IDL.Vec(Notification)], ['query']),
   'getPlatformConfig' : IDL.Func([], [IDL.Opt(PlatformConfig)], ['query']),
-  'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+  'getTailorProfile' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(TailorProfile)],
+      ['query'],
+    ),
+  'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfileV2)], ['query']),
   'getUserProfileByPrincipal' : IDL.Func(
       [IDL.Principal],
-      [IDL.Opt(UserProfile)],
+      [IDL.Opt(UserProfileV2)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
+  'placeOrder' : IDL.Func([Order], [IDL.Text], []),
   'requestApproval' : IDL.Func([], [], []),
+  'saveCallerUserProfile' : IDL.Func([UserProfileInput], [], []),
+  'saveTailorProfile' : IDL.Func([TailorProfile], [], []),
   'saveUserProfile' : IDL.Func([UserProfileInput], [], []),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+  'setOrderDeliveryDate' : IDL.Func([IDL.Text, IDL.Text], [], []),
+  'updateOrderStatus' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'updatePlatformConfig' : IDL.Func([PlatformConfig], [], []),
+  'updateUserRole' : IDL.Func([IDL.Text], [], []),
 });
 
 export const idlInitArgs = [];
@@ -232,6 +280,45 @@ export const idlFactory = ({ IDL }) => {
       'customers' : IDL.Null,
     }),
     'timestamp' : IDL.Int,
+  });
+  const Order = IDL.Record({
+    'id' : IDL.Text,
+    'status' : IDL.Text,
+    'measurementsJson' : IDL.Text,
+    'tailorId' : IDL.Text,
+    'customerPrincipal' : IDL.Text,
+    'customizationJson' : IDL.Text,
+    'estimatedDeliveryDate' : IDL.Text,
+    'orderDate' : IDL.Int,
+    'category' : IDL.Text,
+    'listingTitle' : IDL.Text,
+    'totalPrice' : IDL.Float64,
+    'adminNotes' : IDL.Text,
+  });
+  const TailorProfile = IDL.Record({
+    'id' : IDL.Text,
+    'bio' : IDL.Text,
+    'portfolioJson' : IDL.Text,
+    'turnaroundDays' : IDL.Nat,
+    'ownerName' : IDL.Text,
+    'isPremium' : IDL.Bool,
+    'city' : IDL.Text,
+    'contactEmail' : IDL.Text,
+    'shopName' : IDL.Text,
+    'specialties' : IDL.Text,
+    'basePricing' : IDL.Float64,
+    'profileImageUrl' : IDL.Text,
+    'contactPhone' : IDL.Text,
+  });
+  const Measurement = IDL.Record({ 'value' : IDL.Float64, 'name' : IDL.Text });
+  const UserProfileV2 = IDL.Record({
+    'measurementsJson' : IDL.Text,
+    'preferredLanguage' : IDL.Text,
+    'city' : IDL.Text,
+    'name' : IDL.Text,
+    'role' : IDL.Text,
+    'measurements' : IDL.Vec(Measurement),
+    'phoneNumber' : IDL.Text,
   });
   const FontWeight = IDL.Variant({
     'normal' : IDL.Null,
@@ -320,14 +407,6 @@ export const idlFactory = ({ IDL }) => {
     'products' : IDL.Vec(Product),
     'workTypes' : IDL.Vec(WorkType),
   });
-  const Measurement = IDL.Record({ 'value' : IDL.Float64, 'name' : IDL.Text });
-  const UserProfile = IDL.Record({
-    'preferredLanguage' : IDL.Text,
-    'city' : IDL.Text,
-    'name' : IDL.Text,
-    'measurements' : IDL.Vec(Measurement),
-    'phoneNumber' : IDL.Text,
-  });
   const ApprovalStatus = IDL.Variant({
     'pending' : IDL.Null,
     'approved' : IDL.Null,
@@ -342,9 +421,11 @@ export const idlFactory = ({ IDL }) => {
     'name' : IDL.Text,
   });
   const UserProfileInput = IDL.Record({
+    'measurementsJson' : IDL.Text,
     'preferredLanguage' : IDL.Text,
     'city' : IDL.Text,
     'name' : IDL.Text,
+    'role' : IDL.Text,
     'measurements' : IDL.Vec(MeasurementInput),
     'phoneNumber' : IDL.Text,
   });
@@ -379,27 +460,42 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'createNotification' : IDL.Func([Notification], [], []),
+    'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+    'getAllTailorProfiles' : IDL.Func([], [IDL.Vec(TailorProfile)], ['query']),
+    'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfileV2)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getDefaultAppStyle' : IDL.Func([], [AppStyle], ['query']),
+    'getMyOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
     'getNotifications' : IDL.Func(
         [IDL.Int],
         [IDL.Vec(Notification)],
         ['query'],
       ),
     'getPlatformConfig' : IDL.Func([], [IDL.Opt(PlatformConfig)], ['query']),
-    'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
+    'getTailorProfile' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(TailorProfile)],
+        ['query'],
+      ),
+    'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfileV2)], ['query']),
     'getUserProfileByPrincipal' : IDL.Func(
         [IDL.Principal],
-        [IDL.Opt(UserProfile)],
+        [IDL.Opt(UserProfileV2)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
+    'placeOrder' : IDL.Func([Order], [IDL.Text], []),
     'requestApproval' : IDL.Func([], [], []),
+    'saveCallerUserProfile' : IDL.Func([UserProfileInput], [], []),
+    'saveTailorProfile' : IDL.Func([TailorProfile], [], []),
     'saveUserProfile' : IDL.Func([UserProfileInput], [], []),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
+    'setOrderDeliveryDate' : IDL.Func([IDL.Text, IDL.Text], [], []),
+    'updateOrderStatus' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'updatePlatformConfig' : IDL.Func([PlatformConfig], [], []),
+    'updateUserRole' : IDL.Func([IDL.Text], [], []),
   });
 };
 

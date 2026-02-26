@@ -6,17 +6,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { LuxuryButton } from './LuxuryButton';
 import { useLanguage } from '../hooks/useLanguage';
 import { useSaveCallerUserProfile } from '../hooks/useQueries';
+import { useInternetIdentity } from '../hooks/useInternetIdentity';
+import { useNavigate } from '@tanstack/react-router';
 import type { LocalUserProfile } from '../hooks/useQueries';
-import { User, Scissors, ShieldCheck } from 'lucide-react';
+import { User, Scissors, ShieldCheck, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 interface RoleSelectionModalProps {
   open: boolean;
+  onClose?: () => void;
 }
 
 type Step = 'role' | 'profile';
 
-export function RoleSelectionModal({ open }: RoleSelectionModalProps) {
+export function RoleSelectionModal({ open, onClose }: RoleSelectionModalProps) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
+  const { identity } = useInternetIdentity();
   const saveProfile = useSaveCallerUserProfile();
   const [step, setStep] = useState<Step>('role');
   const [role, setRole] = useState<LocalUserProfile['role']>('customer');
@@ -30,9 +37,47 @@ export function RoleSelectionModal({ open }: RoleSelectionModalProps) {
     setStep('profile');
   };
 
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    }
+  };
+
   const handleSave = async () => {
     if (!name.trim()) return;
-    await saveProfile.mutateAsync({ name, phone, city, preferredLanguage: lang, role });
+    
+    try {
+      const profileData: LocalUserProfile = { 
+        name, 
+        phone, 
+        city, 
+        preferredLanguage: lang, 
+        role 
+      };
+      
+      // Save to backend
+      await saveProfile.mutateAsync(profileData);
+      
+      // Also save to localStorage as backup
+      if (identity) {
+        const principal = identity.getPrincipal().toString();
+        localStorage.setItem(`userProfile_${principal}`, JSON.stringify(profileData));
+        
+        // Store email for admin check if provided
+        if (phone.includes('@')) {
+          localStorage.setItem('userEmail', phone);
+        }
+      }
+      
+      toast.success('Profile saved successfully!');
+      
+      // Close modal and navigate to home
+      if (onClose) onClose();
+      navigate({ to: '/' });
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast.error('Failed to save profile. Please try again.');
+    }
   };
 
   const roles = [
@@ -42,19 +87,28 @@ export function RoleSelectionModal({ open }: RoleSelectionModalProps) {
   ];
 
   return (
-    <Dialog open={open}>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
       <DialogContent className="sm:max-w-md" onInteractOutside={e => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle className="font-serif text-2xl">
-            {step === 'role' ? t('auth.selectRole') : t('auth.completeProfile')}
-          </DialogTitle>
-          <DialogDescription>
-            {step === 'role' ? 'Choose how you want to use Fit Also' : 'Tell us a bit about yourself'}
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="font-serif text-2xl">
+                {step === 'role' ? t('auth.selectRole') : t('auth.completeProfile')}
+              </DialogTitle>
+              <DialogDescription>
+                {step === 'role' ? 'Choose how you want to use Fit Also' : 'Tell us a bit about yourself'}
+              </DialogDescription>
+            </div>
+            {onClose && (
+              <Button variant="ghost" size="sm" onClick={handleClose} className="shrink-0">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         {step === 'role' ? (
-          <div className="grid gap-3 py-2">
+          <div className="grid gap-3 py-2 max-h-[60vh] overflow-y-auto" style={{ scrollMarginBottom: '200px' }}>
             {roles.map(({ id, label, icon: Icon, desc }) => (
               <button
                 key={id}
@@ -72,20 +126,38 @@ export function RoleSelectionModal({ open }: RoleSelectionModalProps) {
             ))}
           </div>
         ) : (
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-1.5">
+          <div className="grid gap-4 py-2 max-h-[60vh] overflow-y-auto pb-[300px]" style={{ scrollMarginBottom: '200px' }}>
+            <div className="grid gap-1.5" style={{ scrollMarginBottom: '200px' }}>
               <Label htmlFor="name">{t('auth.name')} *</Label>
-              <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" />
+              <Input 
+                id="name" 
+                value={name} 
+                onChange={e => setName(e.target.value)} 
+                placeholder="Your full name"
+                onFocus={(e) => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5" style={{ scrollMarginBottom: '200px' }}>
               <Label htmlFor="phone">{t('auth.phone')}</Label>
-              <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" />
+              <Input 
+                id="phone" 
+                value={phone} 
+                onChange={e => setPhone(e.target.value)} 
+                placeholder="+91 98765 43210"
+                onFocus={(e) => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5" style={{ scrollMarginBottom: '200px' }}>
               <Label htmlFor="city">{t('tailor.city')}</Label>
-              <Input id="city" value={city} onChange={e => setCity(e.target.value)} placeholder="Mumbai, Delhi..." />
+              <Input 
+                id="city" 
+                value={city} 
+                onChange={e => setCity(e.target.value)} 
+                placeholder="Mumbai, Delhi..."
+                onFocus={(e) => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              />
             </div>
-            <div className="grid gap-1.5">
+            <div className="grid gap-1.5" style={{ scrollMarginBottom: '200px' }}>
               <Label>{t('auth.language')}</Label>
               <Select value={lang} onValueChange={v => setLang(v as 'en' | 'hi')}>
                 <SelectTrigger>
@@ -109,7 +181,7 @@ export function RoleSelectionModal({ open }: RoleSelectionModalProps) {
                 loading={saveProfile.isPending}
                 disabled={!name.trim()}
               >
-                {t('auth.save')}
+                {saveProfile.isPending ? 'Saving...' : t('auth.save')}
               </LuxuryButton>
             </div>
           </div>
