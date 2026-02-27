@@ -16,8 +16,11 @@ export default {
     },
     extend: {
       fontFamily: {
-        serif: ['Playfair Display', 'Georgia', 'serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Poppins', 'Noto Sans Devanagari', 'system-ui', 'sans-serif'],
+        body: ['Noto Sans', 'Noto Sans Devanagari', 'system-ui', 'sans-serif'],
+        // Keep serif/sans aliases for backward compat with any existing pages
+        serif: ['Poppins', 'Georgia', 'serif'],
+        sans: ['Noto Sans', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: 'oklch(var(--border))',
@@ -53,6 +56,10 @@ export default {
           DEFAULT: 'oklch(var(--card))',
           foreground: 'oklch(var(--card-foreground))'
         },
+        success: {
+          DEFAULT: 'oklch(var(--success) / <alpha-value>)',
+          foreground: 'oklch(var(--success-foreground))',
+        },
         chart: {
           1: 'oklch(var(--chart-1))',
           2: 'oklch(var(--chart-2))',
@@ -70,26 +77,6 @@ export default {
           border: 'oklch(var(--sidebar-border))',
           ring: 'oklch(var(--sidebar-ring))'
         },
-        // Luxury semantic tokens
-        emerald: {
-          DEFAULT: 'oklch(var(--primary) / <alpha-value>)',
-          light: 'oklch(0.88 0.06 160)',
-          dark: 'oklch(0.22 0.07 160)',
-        },
-        burgundy: {
-          DEFAULT: 'oklch(var(--secondary) / <alpha-value>)',
-          light: 'oklch(0.88 0.06 15)',
-          dark: 'oklch(0.25 0.08 15)',
-        },
-        gold: {
-          DEFAULT: 'oklch(var(--accent) / <alpha-value>)',
-          light: 'oklch(0.92 0.07 75)',
-          dark: 'oklch(0.55 0.1 75)',
-        },
-        ivory: {
-          DEFAULT: 'oklch(0.98 0.005 85)',
-          dark: 'oklch(0.94 0.008 80)',
-        }
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -100,9 +87,10 @@ export default {
       },
       boxShadow: {
         xs: '0 1px 2px 0 rgba(0,0,0,0.05)',
-        luxury: '0 4px 24px -4px rgba(0,0,0,0.10), 0 1px 4px -1px rgba(0,0,0,0.06)',
-        'luxury-lg': '0 8px 40px -8px rgba(0,0,0,0.14), 0 2px 8px -2px rgba(0,0,0,0.08)',
-        'luxury-xl': '0 16px 60px -12px rgba(0,0,0,0.18), 0 4px 16px -4px rgba(0,0,0,0.10)',
+        card: '0 1px 4px 0 rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04)',
+        'card-hover': '0 4px 16px 0 rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06)',
+        'bottom-nav': '0 -2px 12px 0 rgba(0,0,0,0.08)',
+        header: '0 1px 8px 0 rgba(0,0,0,0.08)',
       },
       keyframes: {
         'accordion-down': {
@@ -116,12 +104,22 @@ export default {
         'fade-in': {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' }
+        },
+        'slide-in-right': {
+          from: { opacity: '0', transform: 'translateX(20px)' },
+          to: { opacity: '1', transform: 'translateX(0)' }
+        },
+        'banner-slide': {
+          from: { opacity: '0', transform: 'scale(1.03)' },
+          to: { opacity: '1', transform: 'scale(1)' }
         }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in': 'fade-in 0.4s ease-out',
+        'slide-in-right': 'slide-in-right 0.3s ease-out',
+        'banner-slide': 'banner-slide 0.6s ease-out',
       }
     }
   },

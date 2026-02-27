@@ -5,7 +5,7 @@ import Text "mo:core/Text";
 import Runtime "mo:core/Runtime";
 import Nat "mo:core/Nat";
 import Principal "mo:core/Principal";
-import Migration "migration";
+
 
 import AccessControl "authorization/access-control";
 import UserApproval "user-approval/approval";
@@ -13,7 +13,7 @@ import Blob "blob-storage/Storage";
 import MixinAuthorization "authorization/MixinAuthorization";
 import MixinStorage "blob-storage/Mixin";
 
-(with migration = Migration.run)
+
 actor {
   // Types
   type FontWeight = {

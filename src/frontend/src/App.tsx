@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router';
 import { Toaster } from './components/ui/sonner';
 import { Header } from './components/Header';
+import { BottomNav } from './components/BottomNav';
 import { RoleSelectionModal } from './components/RoleSelectionModal';
 import { useInternetIdentity } from './hooks/useInternetIdentity';
 import { useGetCallerUserProfile } from './hooks/useQueries';
@@ -44,29 +45,30 @@ function RootLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
-      <Footer />
+      {/* Desktop footer — hidden on mobile since HomePage has its own */}
+      <DesktopFooter />
+      <BottomNav />
       {!isInitializing && <RoleSelectionModal open={showProfileSetup} />}
       <Toaster />
     </div>
   );
 }
 
-function Footer() {
+// Desktop-only footer (hidden on mobile — HomePage has its own footer)
+function DesktopFooter() {
   const year = new Date().getFullYear();
   const appId = encodeURIComponent(
     typeof window !== 'undefined' ? window.location.hostname : 'fit-also'
   );
 
   return (
-    <footer className="border-t border-border bg-card mt-auto">
-      <div className="container mx-auto px-4 py-8">
+    <footer className="hidden md:block border-t border-border bg-card mt-auto">
+      <div className="container mx-auto px-4 py-6">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
-            <img
-              src="/assets/generated/fitalso-logo-transparent.dim_800x800.png"
-              alt="Fit Also"
-              className="h-10 w-auto object-contain"
-            />
+            <span className="font-display font-extrabold text-lg tracking-widest text-primary uppercase">
+              FIT ALSO
+            </span>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-4 text-sm text-muted-foreground">
             <span>© {year} Fit Also. All rights reserved.</span>
