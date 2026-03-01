@@ -2,7 +2,23 @@
     <head>
         <meta charset='UTF-8' />
         <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-        <title>Fit Also</title>
+        <meta name='theme-color' content='#1565C0' />
+        <title>Fit Also — Custom Tailoring Marketplace</title>
+        <meta name='description' content="India's premier custom tailoring marketplace. Order custom garments made to your exact measurements." />
+        <!-- Theme initialization: prevents flash of wrong theme -->
+        <script>
+          (function() {
+            try {
+              var theme = localStorage.getItem('fitAlsoTheme') || 'system';
+              var root = document.documentElement;
+              if (theme === 'dark') {
+                root.classList.add('dark');
+              } else if (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                root.classList.add('dark');
+              }
+            } catch(e) {}
+          })();
+        </script>
     </head>
     <body>
         <div id='root'></div>

@@ -14,10 +14,73 @@ export class ExternalBlob {
     static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
     withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
 }
-export interface Fabric {
+export interface Product {
+    id: string;
+    title: string;
+    isDeleted: boolean;
+    tailorId: string;
+    customizationOptions: CustomizationOptions;
+    description: string;
+    category: string;
+    image: ExternalBlob;
+    price: number;
+}
+export interface CoinLedger {
+    userId: string;
+    timestamp: bigint;
+    amount: bigint;
+    reason: string;
+}
+export interface TailorProfile {
+    id: string;
+    bio: string;
+    portfolioJson: string;
+    turnaroundDays: bigint;
+    ownerName: string;
+    isPremium: boolean;
+    city: string;
+    contactEmail: string;
+    shopName: string;
+    specialties: string;
+    basePricing: number;
+    profileImageUrl: string;
+    contactPhone: string;
+}
+export interface PlatformConfig {
+    promotions: Array<Promotion>;
+    fabrics: Array<Fabric>;
+    banners: Array<ExternalBlob>;
+    cities: Array<City>;
+    colors: Array<Color>;
+    products: Array<Product>;
+    workTypes: Array<WorkType>;
+}
+export interface City {
+    id: string;
+    name: string;
+}
+export interface ColorScheme {
+    accent: string;
+    background: string;
+    text: string;
+    secondary: string;
+    primary: string;
+}
+export interface Color {
     id: string;
     name: string;
     image?: ExternalBlob;
+}
+export interface MeasurementInput {
+    value: number;
+    name: string;
+}
+export interface DeliveryAddress {
+    area: string;
+    city: string;
+    state: string;
+    pinCode: string;
+    houseNo: string;
 }
 export interface Promotion {
     id: string;
@@ -36,13 +99,6 @@ export interface Promotion {
     applicableCategories: Array<string>;
     validUntil: bigint;
 }
-export interface CustomizationOptions {
-    sleeveStyles: Array<string>;
-    colorPatterns: Array<string>;
-    neckStyles: Array<string>;
-    fabricTypes: Array<string>;
-    workTypes: Array<string>;
-}
 export interface UserProfileV2 {
     measurementsJson: string;
     preferredLanguage: string;
@@ -58,43 +114,11 @@ export interface TextStyle {
     color: string;
     size: bigint;
 }
-export interface PlatformConfig {
-    promotions: Array<Promotion>;
-    fabrics: Array<Fabric>;
-    banners: Array<ExternalBlob>;
-    cities: Array<City>;
-    colors: Array<Color>;
-    products: Array<Product>;
-    workTypes: Array<WorkType>;
-}
-export interface Order {
-    id: string;
-    status: string;
-    measurementsJson: string;
-    tailorId: string;
-    customerPrincipal: string;
-    customizationJson: string;
-    estimatedDeliveryDate: string;
-    orderDate: bigint;
-    category: string;
-    listingTitle: string;
-    totalPrice: number;
-    adminNotes: string;
-}
-export interface TailorProfile {
-    id: string;
-    bio: string;
-    portfolioJson: string;
-    turnaroundDays: bigint;
-    ownerName: string;
-    isPremium: boolean;
-    city: string;
-    contactEmail: string;
-    shopName: string;
-    specialties: string;
-    basePricing: number;
-    profileImageUrl: string;
-    contactPhone: string;
+export interface ButtonStyle {
+    borderRadius: bigint;
+    background: string;
+    text: TextStyle;
+    padding: string;
 }
 export interface UserApprovalInfo {
     status: ApprovalStatus;
@@ -105,15 +129,27 @@ export interface WorkType {
     name: string;
     image?: ExternalBlob;
 }
-export interface City {
+export interface ExtendedOrder {
     id: string;
-    name: string;
-}
-export interface ButtonStyle {
-    borderRadius: bigint;
-    background: string;
-    text: TextStyle;
-    padding: string;
+    customerName: string;
+    status: string;
+    measurementsJson: string;
+    deliveryAddress: DeliveryAddress;
+    isDeleted: boolean;
+    tailorId: string;
+    customerAltPhone: string;
+    customerPhone: string;
+    customerPrincipal: string;
+    productImages: Array<string>;
+    customizationJson: string;
+    estimatedDeliveryDate: string;
+    orderDate: bigint;
+    orderHash: string;
+    paymentMode: string;
+    category: string;
+    listingTitle: string;
+    totalPrice: number;
+    adminNotes: string;
 }
 export interface Measurement {
     value: number;
@@ -126,21 +162,16 @@ export interface Notification {
     targetAudience: Variant_all_tailors_customers;
     timestamp: bigint;
 }
-export interface ColorScheme {
-    accent: string;
-    background: string;
-    text: string;
-    secondary: string;
-    primary: string;
-}
-export interface Color {
-    id: string;
-    name: string;
-    image?: ExternalBlob;
-}
-export interface MeasurementInput {
-    value: number;
-    name: string;
+export interface CartItem {
+    productTitle: string;
+    selectedColor: string;
+    customizationJson: string;
+    productId: string;
+    imageUrl: string;
+    quantity: bigint;
+    category: string;
+    price: number;
+    selectedSize: string;
 }
 export interface AppStyle {
     fonts: {
@@ -154,6 +185,18 @@ export interface AppStyle {
         primary: ButtonStyle;
     };
 }
+export interface Fabric {
+    id: string;
+    name: string;
+    image?: ExternalBlob;
+}
+export interface CustomizationOptions {
+    sleeveStyles: Array<string>;
+    colorPatterns: Array<string>;
+    neckStyles: Array<string>;
+    fabricTypes: Array<string>;
+    workTypes: Array<string>;
+}
 export interface UserProfileInput {
     measurementsJson: string;
     preferredLanguage: string;
@@ -162,16 +205,6 @@ export interface UserProfileInput {
     role: string;
     measurements: Array<MeasurementInput>;
     phoneNumber: string;
-}
-export interface Product {
-    id: string;
-    title: string;
-    tailorId: string;
-    customizationOptions: CustomizationOptions;
-    description: string;
-    category: string;
-    image: ExternalBlob;
-    price: number;
 }
 export enum ApprovalStatus {
     pending = "pending",
@@ -194,30 +227,47 @@ export enum Variant_all_tailors_customers {
     customers = "customers"
 }
 export interface backendInterface {
+    addToCart(item: CartItem): Promise<void>;
+    adminAddColor(color: Color): Promise<void>;
+    adminAddFabric(fabric: Fabric): Promise<void>;
+    adminAddProduct(product: Product): Promise<void>;
+    adminAddWorkType(workType: WorkType): Promise<void>;
+    adminDeleteColor(colorId: string): Promise<void>;
+    adminDeleteFabric(fabricId: string): Promise<void>;
+    adminDeleteProduct(productId: string): Promise<void>;
+    adminDeleteWorkType(workTypeId: string): Promise<void>;
+    adminUpdateProduct(product: Product): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    cancelOrder(orderId: string): Promise<void>;
+    clearCart(): Promise<void>;
     createNotification(notification: Notification): Promise<void>;
-    getAllOrders(): Promise<Array<Order>>;
+    getAllExtendedOrders(): Promise<Array<ExtendedOrder>>;
     getAllTailorProfiles(): Promise<Array<TailorProfile>>;
     getCallerUserProfile(): Promise<UserProfileV2 | null>;
     getCallerUserRole(): Promise<UserRole>;
+    getCart(): Promise<Array<CartItem>>;
+    getCoinHistory(): Promise<Array<CoinLedger>>;
     getDefaultAppStyle(): Promise<AppStyle>;
-    getMyOrders(): Promise<Array<Order>>;
+    getLastUpdateTimestamp(): Promise<bigint>;
+    getMyExtendedOrders(): Promise<Array<ExtendedOrder>>;
     getNotifications(sinceTimestamp: bigint): Promise<Array<Notification>>;
+    getOrderById(orderId: string): Promise<ExtendedOrder | null>;
     getPlatformConfig(): Promise<PlatformConfig | null>;
     getTailorProfile(tailorId: string): Promise<TailorProfile | null>;
+    getUserCoinBalance(): Promise<bigint>;
     getUserProfile(): Promise<UserProfileV2 | null>;
     getUserProfileByPrincipal(user: Principal): Promise<UserProfileV2 | null>;
     isCallerAdmin(): Promise<boolean>;
     isCallerApproved(): Promise<boolean>;
     listApprovals(): Promise<Array<UserApprovalInfo>>;
-    placeOrder(order: Order): Promise<string>;
+    placeExtendedOrder(order: ExtendedOrder): Promise<string>;
+    removeFromCart(productId: string): Promise<void>;
     requestApproval(): Promise<void>;
     saveCallerUserProfile(profileInput: UserProfileInput): Promise<void>;
     saveTailorProfile(profile: TailorProfile): Promise<void>;
     saveUserProfile(profileInput: UserProfileInput): Promise<void>;
     setApproval(user: Principal, status: ApprovalStatus): Promise<void>;
-    setOrderDeliveryDate(orderId: string, deliveryDate: string): Promise<void>;
-    updateOrderStatus(orderId: string, newStatus: string, adminNote: string): Promise<void>;
+    updateExtendedOrderStatus(orderId: string, newStatus: string, adminNote: string): Promise<void>;
     updatePlatformConfig(config: PlatformConfig): Promise<void>;
     updateUserRole(role: string): Promise<void>;
 }

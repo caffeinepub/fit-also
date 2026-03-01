@@ -1,61 +1,30 @@
 # Fit Also
 
 ## Current State
-New project. No existing code. Full rebuild from scratch based on comprehensive design spec and UI reference image provided by user.
+Draft Version 8 is live. The app has Hindi/English language toggle, dark mode, wishlist, cart, order system, admin panel. The translation system exists (LanguageContext + translations.ts) and is functional, but several bugs are present.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Full luxury custom tailoring marketplace (India-focused)
-- RBAC system: Super Admin (Krishna / FUTURETAILORSFORYOU@gmail.com), Admin, Seller, Tailor, Customer
-- Google/Apple/Microsoft login only (no email/password)
-- Homepage: fixed floating header, hero banner (admin-controlled), trending section (horizontal scroll), featured designs grid, bottom nav bar (Home, Custom Orders, Fabrics, Profile)
-- Product system: Fabric, ReadyMade, CustomStitch, Accessory types; images/videos per product; lazy loading
-- Fashion Configuration Engine: dynamic sleeve types (13), neck types (13), embroidery (10), colors + hex picker; all DB-controlled
-- Order system: FIT-YYYYMMDD-XXXX order IDs, order snapshot locking, Paytm-style confirmation animation, horizontal progress bar (8 stages), admin manual stage control
-- Measurement system: cloud saved, dynamic per garment type, auto-fill on repeat orders
-- Loyalty coin system: earn 1 coin/₹100 (online payment only), 1000 coins = ₹2000 reward, coin history ledger
-- Admin dashboard: full stats, CRUD for all entities, customization panel, activity log, analytics, CSV/PDF export, maintenance mode toggle
-- Commission system: global 20% default, seller override
-- Bilingual UI: Hindi + English
-- Light/Dark/System mode toggle
-- Blob storage for image/video uploads
-- Notification system (order updates, admin broadcasts)
-- Invoice PDF generation with Fit Also branding
-- Security: server-side price recalculation, input validation, rate limiting, soft deletes only
+- Admin "Customer Analytics" tab: shows which customer (name + city) ordered which garment most, with order count and revenue breakdown
+- Admin analytics: top garments ordered, customer location breakdown
 
 ### Modify
-- Nothing (new project)
+- **Language switch fix**: Header component has hardcoded Hindi strings ("डिज़ाइन खोजें...", "खोजें", "कार्ट", "सेटिंग्स", "एडमिन") that do NOT use the `t()` translation function — must be replaced with language-aware text
+- **Category nav in Header**: hardcoded Hindi category labels — must switch based on active language
+- **Cart badge fix**: Badge already has `{totalItems > 0 && ...}` condition — need to verify the useCart hook returns 0 correctly when cart is empty, and ensure no phantom rendering
+- **Order tracking fix**: OrderTrackingBar component exists and is used in OrderDetailPage — need to verify it shows correctly; the issue may be that the order status string from backend doesn't match the resolveStageIndex map, or the component is hidden
+- **"Order Now" / Buy button fix**: In ListingDetailPage, the action buttons are in the normal document flow and may get hidden on mobile by the bottom nav — make the Buy It Now button sticky/fixed at bottom on mobile
+- **Order Confirmation page**: Show OrderTrackingBar prominently after order placed
 
 ### Remove
-- Nothing (new project)
+- Nothing
 
 ## Implementation Plan
-1. Select components: authorization, blob-storage
-2. Generate backend: users/roles, products, orders, measurements, loyalty coins, commissions, notifications, fashion config attributes
-3. Build frontend:
-   - Auth flow (Google/Apple/Microsoft login)
-   - Homepage matching UI reference (floating header, hero banner, trending, featured grid, bottom nav)
-   - Product detail + fashion configurator
-   - Cart + checkout flow with loyalty coin toggle
-   - Order confirmation animation + order tracking page
-   - Profile page with measurement management
-   - Admin dashboard (stats, CRUD, customization panel, activity log)
-   - Tailor/Seller views
-   - Dark/Light mode toggle
-   - Hindi/English bilingual labels
-
-## UX Notes
-- Design reference shows mobile-first layout matching Flipkart/Myntra aesthetic
-- Fixed floating header: "Fit Also" bold left, search + cart + profile icons right
-- Bottom nav: Home, Custom Orders, Fabrics, Profile
-- Hero banner: admin-editable, auto-slide promos
-- Trending section: horizontal scroll, star ratings + "Trending" badge
-- Featured designs: 2-column grid, "Cart mein jodo" blue buttons
-- Vibrant colors, no cream/beige -- premium feel
-- Micro animations: button ripple, hover zoom, smooth transitions
-- Paytm-style order confirmation: spinner → checkmark → "CONGRATULATIONS"
-- Order progress bar: green completed, glowing green current, grey pending
-- Empty state illustrations on all empty screens
-- Disable text selection on buttons/cards/nav
-- Mobile: touch ripple; Desktop: hover glow
+1. Fix Header.tsx: replace all hardcoded Hindi strings with language-aware text using `t()` or inline ternary `language === 'hi' ? '...' : '...'`
+2. Fix Header category nav: use translation keys or language-conditional labels
+3. Fix ListingDetailPage: make "Buy It Now" / "Add to Cart" buttons sticky at bottom on mobile (fixed positioning above bottom nav)
+4. Fix OrderDetailPage: ensure OrderTrackingBar is clearly visible (check rendering condition, add proper spacing)
+5. Fix OrderConfirmationPage: add OrderTrackingBar display
+6. Verify useCart returns 0 when empty — if cart badge still shows, add explicit `totalItems > 0` guard
+7. Add "Customer Analytics" tab in AdminPanel with: table of customers, their city, which garment they ordered most, total orders, total spend

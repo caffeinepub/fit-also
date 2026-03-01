@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Noto+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,14 +7,14 @@
     --radius: 0.5rem;
 
     /* Flipkart/Myntra Marketplace Palette — Light */
-    --background: 0.96 0.004 250;
-    --foreground: 0.13 0.015 250;
+    --background: 0.97 0.003 250;
+    --foreground: 0.12 0.018 250;
 
     --card: 1 0 0;
-    --card-foreground: 0.13 0.015 250;
+    --card-foreground: 0.12 0.018 250;
 
     --popover: 1 0 0;
-    --popover-foreground: 0.13 0.015 250;
+    --popover-foreground: 0.12 0.018 250;
 
     /* Flipkart Blue */
     --primary: 0.46 0.19 258;
@@ -27,17 +25,17 @@
     --secondary-foreground: 1 0 0;
 
     --muted: 0.94 0.005 250;
-    --muted-foreground: 0.52 0.02 250;
+    --muted-foreground: 0.52 0.022 250;
 
     /* Amber rating star */
     --accent: 0.78 0.18 65;
-    --accent-foreground: 0.13 0.015 250;
+    --accent-foreground: 0.12 0.018 250;
 
     --destructive: 0.55 0.22 25;
     --destructive-foreground: 1 0 0;
 
-    --border: 0.90 0.006 250;
-    --input: 0.90 0.006 250;
+    --border: 0.89 0.008 250;
+    --input: 0.89 0.008 250;
     --ring: 0.46 0.19 258;
 
     /* Success green for trending badges */
@@ -53,84 +51,152 @@
     --chart-4: 0.54 0.18 155;
     --chart-5: 0.62 0.2 320;
 
-    --sidebar: 0.97 0.004 250;
-    --sidebar-foreground: 0.13 0.015 250;
+    --sidebar: 0.97 0.003 250;
+    --sidebar-foreground: 0.12 0.018 250;
     --sidebar-primary: 0.46 0.19 258;
     --sidebar-primary-foreground: 1 0 0;
     --sidebar-accent: 0.94 0.005 250;
-    --sidebar-accent-foreground: 0.13 0.015 250;
-    --sidebar-border: 0.90 0.006 250;
+    --sidebar-accent-foreground: 0.12 0.018 250;
+    --sidebar-border: 0.89 0.008 250;
     --sidebar-ring: 0.46 0.19 258;
   }
 
+  /* ─── DARK MODE ─────────────────────────────────────────────────────────── */
   .dark {
-    --background: 0.12 0.02 250;
-    --foreground: 0.95 0.005 250;
+    color-scheme: dark;
 
-    --card: 0.17 0.02 250;
-    --card-foreground: 0.95 0.005 250;
+    /* Near-black backgrounds */
+    --background: 0.1 0.018 258;
+    --foreground: 0.95 0.008 250;
 
-    --popover: 0.17 0.02 250;
-    --popover-foreground: 0.95 0.005 250;
+    /* Card backgrounds - dark but visible */
+    --card: 0.15 0.02 258;
+    --card-foreground: 0.95 0.008 250;
 
-    --primary: 0.6 0.2 258;
-    --primary-foreground: 0.1 0.02 250;
+    --popover: 0.15 0.02 258;
+    --popover-foreground: 0.95 0.008 250;
 
-    --secondary: 0.72 0.18 45;
-    --secondary-foreground: 0.1 0.02 250;
+    /* Brighter primary in dark mode for visibility */
+    --primary: 0.58 0.22 258;
+    --primary-foreground: 0.95 0.008 250;
 
-    --muted: 0.22 0.02 250;
-    --muted-foreground: 0.65 0.02 250;
+    /* Brighter orange secondary */
+    --secondary: 0.72 0.19 45;
+    --secondary-foreground: 0.1 0.01 250;
 
+    /* Muted backgrounds for dark mode */
+    --muted: 0.2 0.018 258;
+    --muted-foreground: 0.68 0.018 250;
+
+    /* Amber accent */
     --accent: 0.82 0.18 65;
-    --accent-foreground: 0.1 0.02 250;
+    --accent-foreground: 0.1 0.01 250;
 
     --destructive: 0.6 0.22 25;
-    --destructive-foreground: 0.95 0.005 250;
+    --destructive-foreground: 0.95 0.008 250;
 
-    --border: 1 0 0 / 10%;
-    --input: 1 0 0 / 12%;
-    --ring: 0.6 0.2 258;
+    /* Dark borders */
+    --border: 0.28 0.02 258;
+    --input: 0.22 0.02 258;
+    --ring: 0.58 0.22 258;
 
     --success: 0.62 0.18 155;
-    --success-foreground: 0.1 0.02 250;
+    --success-foreground: 0.1 0.01 250;
     --deal: 0.56 0.16 148;
 
-    --sidebar: 0.17 0.02 250;
-    --sidebar-foreground: 0.95 0.005 250;
-    --sidebar-primary: 0.6 0.2 258;
-    --sidebar-primary-foreground: 0.95 0.005 250;
-    --sidebar-accent: 0.22 0.02 250;
-    --sidebar-accent-foreground: 0.95 0.005 250;
-    --sidebar-border: 1 0 0 / 10%;
-    --sidebar-ring: 0.6 0.2 258;
+    --sidebar: 0.13 0.02 258;
+    --sidebar-foreground: 0.95 0.008 250;
+    --sidebar-primary: 0.58 0.22 258;
+    --sidebar-primary-foreground: 0.95 0.008 250;
+    --sidebar-accent: 0.2 0.018 258;
+    --sidebar-accent-foreground: 0.95 0.008 250;
+    --sidebar-border: 0.28 0.02 258;
+    --sidebar-ring: 0.58 0.22 258;
   }
 
   * {
     @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
     @apply bg-background text-foreground font-body antialiased;
-    font-feature-settings: 'kern' 1;
+    font-feature-settings: "kern" 1;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display;
+  }
+
+  /* Dark mode global overrides — ensure white backgrounds flip */
+  .dark .bg-white {
+    background-color: oklch(var(--card)) !important;
+  }
+  .dark .bg-gray-50 {
+    background-color: oklch(var(--background)) !important;
+  }
+  .dark .bg-gray-100 {
+    background-color: oklch(var(--muted)) !important;
+  }
+  .dark .bg-gray-900 {
+    background-color: oklch(0.08 0.015 258) !important;
+  }
+  .dark .text-gray-900,
+  .dark .text-gray-800 {
+    color: oklch(var(--foreground)) !important;
+  }
+  .dark .text-gray-600,
+  .dark .text-gray-500 {
+    color: oklch(var(--muted-foreground)) !important;
+  }
+  .dark .text-gray-400 {
+    color: oklch(0.5 0.015 250) !important;
+  }
+  .dark .border-gray-200,
+  .dark .border-gray-100 {
+    border-color: oklch(var(--border)) !important;
+  }
+  .dark .divide-gray-100 > * + * {
+    border-color: oklch(var(--border)) !important;
+  }
+  .dark .shadow-sm {
+    box-shadow: 0 1px 4px oklch(0 0 0 / 0.4) !important;
+  }
+
+  /* Cards and product cards in dark mode */
+  .dark .card-shadow {
+    box-shadow: 0 1px 4px 0 oklch(0 0 0 / 0.4), 0 0 0 1px oklch(var(--border));
+  }
+  .dark .card-shadow-hover {
+    box-shadow: 0 4px 16px 0 oklch(0 0 0 / 0.5), 0 0 0 1px oklch(var(--border));
   }
 }
 
 @layer utilities {
   .font-display {
-    font-family: 'Poppins', 'Noto Sans Devanagari', system-ui, sans-serif;
+    font-family: "Poppins", "Noto Sans Devanagari", system-ui, sans-serif;
   }
   .font-body {
-    font-family: 'Noto Sans', 'Noto Sans Devanagari', system-ui, sans-serif;
+    font-family: "Noto Sans", "Noto Sans Devanagari", system-ui, sans-serif;
   }
 
   /* FIT ALSO brand text */
   .brand-text {
-    background: linear-gradient(135deg, oklch(0.46 0.19 258), oklch(0.38 0.22 270));
+    background: linear-gradient(
+      135deg,
+      oklch(0.46 0.19 258),
+      oklch(0.38 0.22 270)
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -139,10 +205,10 @@
   }
 
   .card-shadow {
-    box-shadow: 0 1px 4px 0 rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.04);
+    box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04);
   }
   .card-shadow-hover {
-    box-shadow: 0 4px 16px 0 rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+    box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.06);
   }
 
   .trending-badge {
@@ -169,5 +235,82 @@
   }
   .snap-item {
     scroll-snap-align: start;
+  }
+
+  /* Disable text selection on interactive elements */
+  button,
+  .card,
+  nav,
+  header,
+  .nav-item,
+  .bottom-nav {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* Order tracking pulse animation */
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 oklch(0.54 0.18 155 / 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 6px oklch(0.54 0.18 155 / 0);
+    }
+  }
+  .tracking-pulse {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  /* Order confirmation animations */
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes check-pop {
+    0% {
+      transform: scale(0) rotate(-10deg);
+      opacity: 0;
+    }
+    60% {
+      transform: scale(1.2) rotate(5deg);
+      opacity: 1;
+    }
+    100% {
+      transform: scale(1) rotate(0deg);
+      opacity: 1;
+    }
+  }
+  @keyframes confetti-fall {
+    0% {
+      transform: translateY(-20px) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(60px) rotate(720deg);
+      opacity: 0;
+    }
+  }
+  .animate-spin-slow {
+    animation: spin-slow 1s linear infinite;
+  }
+  .animate-check-pop {
+    animation: check-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  .animate-confetti {
+    animation: confetti-fall 1.5s ease-out forwards;
+  }
+
+  /* Scrollbar hide */
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

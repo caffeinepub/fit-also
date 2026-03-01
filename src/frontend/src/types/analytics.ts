@@ -1,4 +1,4 @@
-import type { Order } from './order';
+import type { Order } from "./order";
 
 export interface AdminAnalytics {
   totalOrders: number;

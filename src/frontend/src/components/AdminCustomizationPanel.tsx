@@ -1,23 +1,41 @@
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { toast } from 'sonner';
-import { useGetPlatformConfig, useUpdatePlatformConfig } from '../hooks/useQueries';
-import { Loader2, Save, Plus, Trash2, Edit, X } from 'lucide-react';
-import { ExternalBlob, type Product, type PlatformConfig } from '../backend';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Edit, Loader2, Plus, Save, Trash2, X } from "lucide-react";
+import React, { useState } from "react";
+import { toast } from "sonner";
+import { ExternalBlob, type PlatformConfig, type Product } from "../backend";
+import {
+  useGetPlatformConfig,
+  useUpdatePlatformConfig,
+} from "../hooks/useQueries";
 
 interface AdminCustomizationPanelProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizationPanelProps) {
+export function AdminCustomizationPanel({
+  open,
+  onOpenChange,
+}: AdminCustomizationPanelProps) {
   const { data: config } = useGetPlatformConfig();
   const updateConfig = useUpdatePlatformConfig();
 
@@ -27,6 +45,7 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
   const [workTypes, setWorkTypes] = useState(config?.workTypes || []);
   const [cities, setCities] = useState(config?.cities || []);
   const [banners, setBanners] = useState(config?.banners || []);
+  // biome-ignore lint/correctness/noUnusedVariables: used in handleImageUpload for future upload UI
   const [uploadingImage, setUploadingImage] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
   const [newProduct, setNewProduct] = useState<{
@@ -37,12 +56,12 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
     imageFile: File | null;
     imagePreview: string;
   }>({
-    title: '',
-    category: 'Saree Blouse',
-    price: '',
-    description: '',
+    title: "",
+    category: "Saree Blouse",
+    price: "",
+    description: "",
     imageFile: null,
-    imagePreview: '',
+    imagePreview: "",
   });
 
   // Sync state with config when it loads
@@ -57,6 +76,7 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
     }
   }, [config]);
 
+  // biome-ignore lint/correctness/noUnusedVariables: reserved for image upload feature
   const handleImageUpload = async (file: File): Promise<string> => {
     setUploadingImage(true);
     try {
@@ -74,7 +94,7 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
 
   const handleSaveChanges = async () => {
     if (!config) return;
-    
+
     try {
       const updatedConfig: PlatformConfig = {
         ...config,
@@ -85,23 +105,23 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
         cities,
         banners,
       };
-      
+
       await updateConfig.mutateAsync(updatedConfig);
-      
-      toast.success('Platform configuration updated successfully');
-      
+
+      toast.success("Platform configuration updated successfully");
+
       onOpenChange(false);
-    } catch (error) {
-      toast.error('Failed to update platform configuration');
+    } catch {
+      toast.error("Failed to update platform configuration");
     }
   };
-  
+
   const handleAddProduct = async () => {
     if (!newProduct.title.trim() || !newProduct.price) {
-      toast.error('Please fill in all required fields');
+      toast.error("Please fill in all required fields");
       return;
     }
-    
+
     try {
       // Convert image to base64 if file provided
       let imageBlob = config?.products[0]?.image; // Default placeholder
@@ -113,15 +133,20 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
         });
         imageBlob = ExternalBlob.fromURL(base64);
       }
-      
+
       const product: Product = {
         id: crypto.randomUUID(),
         title: newProduct.title,
         category: newProduct.category,
-        price: parseFloat(newProduct.price) || 0,
+        price: Number.parseFloat(newProduct.price) || 0,
         description: newProduct.description,
-        image: imageBlob || ExternalBlob.fromURL('/assets/generated/garment-placeholder.dim_400x500.png'),
-        tailorId: 'admin',
+        image:
+          imageBlob ||
+          ExternalBlob.fromURL(
+            "/assets/generated/garment-placeholder.dim_400x500.png",
+          ),
+        tailorId: "admin",
+        isDeleted: false,
         customizationOptions: {
           neckStyles: [],
           sleeveStyles: [],
@@ -130,25 +155,25 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
           workTypes: [],
         },
       };
-      
+
       setProducts([...products, product]);
       setAddProductOpen(false);
       setNewProduct({
-        title: '',
-        category: 'Saree Blouse',
-        price: '',
-        description: '',
+        title: "",
+        category: "Saree Blouse",
+        price: "",
+        description: "",
         imageFile: null,
-        imagePreview: '',
+        imagePreview: "",
       });
-      toast.success('Product added! Remember to save changes.');
-    } catch (error) {
-      toast.error('Failed to add product');
+      toast.success("Product added! Remember to save changes.");
+    } catch {
+      toast.error("Failed to add product");
     }
   };
-  
+
   const handleProductImageUpload = (file: File) => {
-    setNewProduct(prev => ({
+    setNewProduct((prev) => ({
       ...prev,
       imageFile: file,
       imagePreview: URL.createObjectURL(file),
@@ -161,7 +186,9 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
-          <DialogTitle className="text-2xl">🎨 Platform Customization</DialogTitle>
+          <DialogTitle className="text-2xl">
+            🎨 Platform Customization
+          </DialogTitle>
         </DialogHeader>
 
         <ScrollArea className="flex-1 pr-4">
@@ -180,16 +207,25 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-3">
                   {products.slice(0, 4).map((product) => (
-                    <div key={product.id} className="flex gap-3 p-3 border rounded-lg">
-                      <img 
-                        src={product.image.getDirectURL()} 
+                    <div
+                      key={product.id}
+                      className="flex gap-3 p-3 border rounded-lg"
+                    >
+                      <img
+                        src={product.image.getDirectURL()}
                         alt={product.title}
                         className="w-20 h-20 object-cover rounded"
                       />
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate">{product.title}</h4>
-                        <p className="text-sm text-muted-foreground">₹{product.price}</p>
-                        <p className="text-xs text-muted-foreground">{product.category}</p>
+                        <h4 className="font-medium truncate">
+                          {product.title}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          ₹{product.price}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {product.category}
+                        </p>
                       </div>
                       <Button variant="outline" size="sm">
                         <Edit className="h-3 w-3" />
@@ -205,9 +241,15 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Cities ({cities.length})</CardTitle>
-                  <Button size="sm" onClick={() => {
-                    setCities([...cities, { id: crypto.randomUUID(), name: '' }]);
-                  }}>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setCities([
+                        ...cities,
+                        { id: crypto.randomUUID(), name: "" },
+                      ]);
+                    }}
+                  >
                     <Plus className="h-4 w-4 mr-1" />
                     Add City
                   </Button>
@@ -229,7 +271,9 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCities(cities.filter((_, i) => i !== idx))}
+                        onClick={() =>
+                          setCities(cities.filter((_, i) => i !== idx))
+                        }
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -333,7 +377,7 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
           </Button>
         </div>
       </DialogContent>
-      
+
       {/* Add Product Dialog */}
       <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
         <DialogContent className="max-w-xl">
@@ -343,17 +387,26 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
           <div className="space-y-4">
             <div>
               <Label>Product Title *</Label>
-              <Input 
-                value={newProduct.title} 
-                onChange={e => setNewProduct(p => ({ ...p, title: e.target.value }))}
+              <Input
+                value={newProduct.title}
+                onChange={(e) =>
+                  setNewProduct((p) => ({ ...p, title: e.target.value }))
+                }
                 placeholder="e.g. Premium Silk Saree Blouse"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Category *</Label>
-                <Select value={newProduct.category} onValueChange={v => setNewProduct(p => ({ ...p, category: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={newProduct.category}
+                  onValueChange={(v) =>
+                    setNewProduct((p) => ({ ...p, category: v }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Saree Blouse">Saree Blouse</SelectItem>
                     <SelectItem value="Salwar Kameez">Salwar Kameez</SelectItem>
@@ -368,19 +421,23 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
               </div>
               <div>
                 <Label>Price (₹) *</Label>
-                <Input 
-                  type="number" 
-                  value={newProduct.price} 
-                  onChange={e => setNewProduct(p => ({ ...p, price: e.target.value }))}
+                <Input
+                  type="number"
+                  value={newProduct.price}
+                  onChange={(e) =>
+                    setNewProduct((p) => ({ ...p, price: e.target.value }))
+                  }
                   placeholder="1500"
                 />
               </div>
             </div>
             <div>
               <Label>Description</Label>
-              <Textarea 
-                value={newProduct.description} 
-                onChange={e => setNewProduct(p => ({ ...p, description: e.target.value }))}
+              <Textarea
+                value={newProduct.description}
+                onChange={(e) =>
+                  setNewProduct((p) => ({ ...p, description: e.target.value }))
+                }
                 placeholder="Describe the product..."
                 rows={3}
               />
@@ -389,7 +446,11 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
               <Label>Product Image</Label>
               <div className="mt-2 space-y-2">
                 {newProduct.imagePreview && (
-                  <img src={newProduct.imagePreview} alt="Preview" className="w-32 h-32 object-cover rounded-lg" />
+                  <img
+                    src={newProduct.imagePreview}
+                    alt="Preview"
+                    className="w-32 h-32 object-cover rounded-lg"
+                  />
                 )}
                 <input
                   type="file"
@@ -404,7 +465,9 @@ export function AdminCustomizationPanel({ open, onOpenChange }: AdminCustomizati
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddProductOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAddProductOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={handleAddProduct}>Add Product</Button>
           </DialogFooter>
         </DialogContent>

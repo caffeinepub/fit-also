@@ -1,18 +1,51 @@
 export type GarmentCategory =
-  | 'Shirts'
-  | 'Kurtas'
-  | 'Suits'
-  | 'Sherwanis'
-  | 'Trousers'
-  | 'Lehengas'
-  | 'Saree Blouses'
-  | 'Anarkalis';
+  | "Shirts"
+  | "Kurtas"
+  | "Suits"
+  | "Sherwanis"
+  | "Trousers"
+  | "Lehengas"
+  | "Saree Blouses"
+  | "Anarkalis";
 
-export type NeckStyle = 'round' | 'vNeck' | 'mandarin' | 'boat' | 'square' | 'sweetheart';
-export type SleeveStyle = 'full' | 'half' | 'sleeveless' | 'threequarter' | 'cap';
-export type FabricType = 'cotton' | 'silk' | 'linen' | 'chiffon' | 'georgette' | 'velvet' | 'brocade' | 'crepe';
-export type ColorPattern = 'ivory' | 'red' | 'navy' | 'emerald' | 'gold' | 'burgundy' | 'blush' | 'black';
-export type WorkType = 'plain' | 'embroidery' | 'zari' | 'sequin' | 'mirror' | 'block';
+export type NeckStyle =
+  | "round"
+  | "vNeck"
+  | "mandarin"
+  | "boat"
+  | "square"
+  | "sweetheart";
+export type SleeveStyle =
+  | "full"
+  | "half"
+  | "sleeveless"
+  | "threequarter"
+  | "cap";
+export type FabricType =
+  | "cotton"
+  | "silk"
+  | "linen"
+  | "chiffon"
+  | "georgette"
+  | "velvet"
+  | "brocade"
+  | "crepe";
+export type ColorPattern =
+  | "ivory"
+  | "red"
+  | "navy"
+  | "emerald"
+  | "gold"
+  | "burgundy"
+  | "blush"
+  | "black";
+export type WorkType =
+  | "plain"
+  | "embroidery"
+  | "zari"
+  | "sequin"
+  | "mirror"
+  | "block";
 
 export interface CustomizationOptions {
   neckStyle: NeckStyle;

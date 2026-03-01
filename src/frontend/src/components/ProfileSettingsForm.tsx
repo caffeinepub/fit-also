@@ -1,12 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { LuxuryButton } from './LuxuryButton';
-import { useLanguage } from '../hooks/useLanguage';
-import { useGetCallerUserProfile, useSaveCallerUserProfile } from '../hooks/useQueries';
-import type { LocalUserProfile } from '../hooks/useQueries';
-import { CheckCircle } from 'lucide-react';
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { CheckCircle } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { useLanguage } from "../hooks/useLanguage";
+import {
+  useGetCallerUserProfile,
+  useSaveCallerUserProfile,
+} from "../hooks/useQueries";
+import type { LocalUserProfile } from "../hooks/useQueries";
+import { LuxuryButton } from "./LuxuryButton";
 
 export function ProfileSettingsForm() {
   const { t } = useLanguage();
@@ -15,11 +24,11 @@ export function ProfileSettingsForm() {
   const [saved, setSaved] = useState(false);
 
   const [form, setForm] = useState<LocalUserProfile>({
-    name: '',
-    phone: '',
-    city: '',
-    preferredLanguage: 'en',
-    role: 'customer',
+    name: "",
+    phone: "",
+    city: "",
+    preferredLanguage: "en",
+    role: "customer",
   });
 
   useEffect(() => {
@@ -37,21 +46,37 @@ export function ProfileSettingsForm() {
   return (
     <div className="grid gap-4">
       <div className="grid gap-1.5">
-        <Label>{t('auth.name')}</Label>
-        <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+        <Label>{t("auth.name")}</Label>
+        <Input
+          value={form.name}
+          onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+        />
       </div>
       <div className="grid gap-1.5">
-        <Label>{t('auth.phone')}</Label>
-        <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
+        <Label>{t("auth.phone")}</Label>
+        <Input
+          value={form.phone}
+          onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+        />
       </div>
       <div className="grid gap-1.5">
-        <Label>{t('tailor.city')}</Label>
-        <Input value={form.city} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} />
+        <Label>{t("tailor.city")}</Label>
+        <Input
+          value={form.city}
+          onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
+        />
       </div>
       <div className="grid gap-1.5">
-        <Label>{t('auth.language')}</Label>
-        <Select value={form.preferredLanguage} onValueChange={v => setForm(p => ({ ...p, preferredLanguage: v as 'en' | 'hi' }))}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+        <Label>{t("auth.language")}</Label>
+        <Select
+          value={form.preferredLanguage}
+          onValueChange={(v) =>
+            setForm((p) => ({ ...p, preferredLanguage: v as "en" | "hi" }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="en">English</SelectItem>
             <SelectItem value="hi">हिंदी</SelectItem>
@@ -70,7 +95,7 @@ export function ProfileSettingsForm() {
           loading={saveProfile.isPending}
           disabled={!form.name.trim()}
         >
-          {t('common.save')}
+          {t("common.save")}
         </LuxuryButton>
         {saved && (
           <div className="flex items-center gap-1.5 text-sm text-primary">

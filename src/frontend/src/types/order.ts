@@ -1,7 +1,13 @@
-import type { CustomizationOptions } from './catalog';
-import type { MeasurementProfile } from './measurements';
+import type { CustomizationOptions } from "./catalog";
+import type { MeasurementProfile } from "./measurements";
 
-export type OrderStatus = 'pending' | 'confirmed' | 'inTailoring' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "inTailoring"
+  | "shipped"
+  | "delivered"
+  | "cancelled";
 
 export interface Order {
   id: string;

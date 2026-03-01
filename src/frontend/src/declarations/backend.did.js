@@ -19,6 +19,51 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
+export const CartItem = IDL.Record({
+  'productTitle' : IDL.Text,
+  'selectedColor' : IDL.Text,
+  'customizationJson' : IDL.Text,
+  'productId' : IDL.Text,
+  'imageUrl' : IDL.Text,
+  'quantity' : IDL.Nat,
+  'category' : IDL.Text,
+  'price' : IDL.Float64,
+  'selectedSize' : IDL.Text,
+});
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
+export const Color = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'image' : IDL.Opt(ExternalBlob),
+});
+export const Fabric = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'image' : IDL.Opt(ExternalBlob),
+});
+export const CustomizationOptions = IDL.Record({
+  'sleeveStyles' : IDL.Vec(IDL.Text),
+  'colorPatterns' : IDL.Vec(IDL.Text),
+  'neckStyles' : IDL.Vec(IDL.Text),
+  'fabricTypes' : IDL.Vec(IDL.Text),
+  'workTypes' : IDL.Vec(IDL.Text),
+});
+export const Product = IDL.Record({
+  'id' : IDL.Text,
+  'title' : IDL.Text,
+  'isDeleted' : IDL.Bool,
+  'tailorId' : IDL.Text,
+  'customizationOptions' : CustomizationOptions,
+  'description' : IDL.Text,
+  'category' : IDL.Text,
+  'image' : ExternalBlob,
+  'price' : IDL.Float64,
+});
+export const WorkType = IDL.Record({
+  'id' : IDL.Text,
+  'name' : IDL.Text,
+  'image' : IDL.Opt(ExternalBlob),
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -35,15 +80,30 @@ export const Notification = IDL.Record({
   }),
   'timestamp' : IDL.Int,
 });
-export const Order = IDL.Record({
+export const DeliveryAddress = IDL.Record({
+  'area' : IDL.Text,
+  'city' : IDL.Text,
+  'state' : IDL.Text,
+  'pinCode' : IDL.Text,
+  'houseNo' : IDL.Text,
+});
+export const ExtendedOrder = IDL.Record({
   'id' : IDL.Text,
+  'customerName' : IDL.Text,
   'status' : IDL.Text,
   'measurementsJson' : IDL.Text,
+  'deliveryAddress' : DeliveryAddress,
+  'isDeleted' : IDL.Bool,
   'tailorId' : IDL.Text,
+  'customerAltPhone' : IDL.Text,
+  'customerPhone' : IDL.Text,
   'customerPrincipal' : IDL.Text,
+  'productImages' : IDL.Vec(IDL.Text),
   'customizationJson' : IDL.Text,
   'estimatedDeliveryDate' : IDL.Text,
   'orderDate' : IDL.Int,
+  'orderHash' : IDL.Text,
+  'paymentMode' : IDL.Text,
   'category' : IDL.Text,
   'listingTitle' : IDL.Text,
   'totalPrice' : IDL.Float64,
@@ -77,6 +137,12 @@ export const UserProfileV2 = IDL.Record({
   'measurements' : IDL.Vec(Measurement),
   'phoneNumber' : IDL.Text,
 });
+export const CoinLedger = IDL.Record({
+  'userId' : IDL.Text,
+  'timestamp' : IDL.Int,
+  'amount' : IDL.Int,
+  'reason' : IDL.Text,
+});
 export const FontWeight = IDL.Variant({
   'normal' : IDL.Null,
   'bold' : IDL.Null,
@@ -88,7 +154,6 @@ export const TextStyle = IDL.Record({
   'color' : IDL.Text,
   'size' : IDL.Nat,
 });
-export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const ColorScheme = IDL.Record({
   'accent' : IDL.Text,
   'background' : IDL.Text,
@@ -122,39 +187,7 @@ export const Promotion = IDL.Record({
   'applicableCategories' : IDL.Vec(IDL.Text),
   'validUntil' : IDL.Int,
 });
-export const Fabric = IDL.Record({
-  'id' : IDL.Text,
-  'name' : IDL.Text,
-  'image' : IDL.Opt(ExternalBlob),
-});
 export const City = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
-export const Color = IDL.Record({
-  'id' : IDL.Text,
-  'name' : IDL.Text,
-  'image' : IDL.Opt(ExternalBlob),
-});
-export const CustomizationOptions = IDL.Record({
-  'sleeveStyles' : IDL.Vec(IDL.Text),
-  'colorPatterns' : IDL.Vec(IDL.Text),
-  'neckStyles' : IDL.Vec(IDL.Text),
-  'fabricTypes' : IDL.Vec(IDL.Text),
-  'workTypes' : IDL.Vec(IDL.Text),
-});
-export const Product = IDL.Record({
-  'id' : IDL.Text,
-  'title' : IDL.Text,
-  'tailorId' : IDL.Text,
-  'customizationOptions' : CustomizationOptions,
-  'description' : IDL.Text,
-  'category' : IDL.Text,
-  'image' : ExternalBlob,
-  'price' : IDL.Float64,
-});
-export const WorkType = IDL.Record({
-  'id' : IDL.Text,
-  'name' : IDL.Text,
-  'image' : IDL.Opt(ExternalBlob),
-});
 export const PlatformConfig = IDL.Record({
   'promotions' : IDL.Vec(Promotion),
   'fabrics' : IDL.Vec(Fabric),
@@ -215,21 +248,38 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addToCart' : IDL.Func([CartItem], [], []),
+  'adminAddColor' : IDL.Func([Color], [], []),
+  'adminAddFabric' : IDL.Func([Fabric], [], []),
+  'adminAddProduct' : IDL.Func([Product], [], []),
+  'adminAddWorkType' : IDL.Func([WorkType], [], []),
+  'adminDeleteColor' : IDL.Func([IDL.Text], [], []),
+  'adminDeleteFabric' : IDL.Func([IDL.Text], [], []),
+  'adminDeleteProduct' : IDL.Func([IDL.Text], [], []),
+  'adminDeleteWorkType' : IDL.Func([IDL.Text], [], []),
+  'adminUpdateProduct' : IDL.Func([Product], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'cancelOrder' : IDL.Func([IDL.Text], [], []),
+  'clearCart' : IDL.Func([], [], []),
   'createNotification' : IDL.Func([Notification], [], []),
-  'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+  'getAllExtendedOrders' : IDL.Func([], [IDL.Vec(ExtendedOrder)], ['query']),
   'getAllTailorProfiles' : IDL.Func([], [IDL.Vec(TailorProfile)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfileV2)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+  'getCart' : IDL.Func([], [IDL.Vec(CartItem)], ['query']),
+  'getCoinHistory' : IDL.Func([], [IDL.Vec(CoinLedger)], ['query']),
   'getDefaultAppStyle' : IDL.Func([], [AppStyle], ['query']),
-  'getMyOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+  'getLastUpdateTimestamp' : IDL.Func([], [IDL.Int], ['query']),
+  'getMyExtendedOrders' : IDL.Func([], [IDL.Vec(ExtendedOrder)], ['query']),
   'getNotifications' : IDL.Func([IDL.Int], [IDL.Vec(Notification)], ['query']),
+  'getOrderById' : IDL.Func([IDL.Text], [IDL.Opt(ExtendedOrder)], ['query']),
   'getPlatformConfig' : IDL.Func([], [IDL.Opt(PlatformConfig)], ['query']),
   'getTailorProfile' : IDL.Func(
       [IDL.Text],
       [IDL.Opt(TailorProfile)],
       ['query'],
     ),
+  'getUserCoinBalance' : IDL.Func([], [IDL.Int], ['query']),
   'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfileV2)], ['query']),
   'getUserProfileByPrincipal' : IDL.Func(
       [IDL.Principal],
@@ -239,14 +289,18 @@ export const idlService = IDL.Service({
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
   'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
   'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
-  'placeOrder' : IDL.Func([Order], [IDL.Text], []),
+  'placeExtendedOrder' : IDL.Func([ExtendedOrder], [IDL.Text], []),
+  'removeFromCart' : IDL.Func([IDL.Text], [], []),
   'requestApproval' : IDL.Func([], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfileInput], [], []),
   'saveTailorProfile' : IDL.Func([TailorProfile], [], []),
   'saveUserProfile' : IDL.Func([UserProfileInput], [], []),
   'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
-  'setOrderDeliveryDate' : IDL.Func([IDL.Text, IDL.Text], [], []),
-  'updateOrderStatus' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+  'updateExtendedOrderStatus' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text],
+      [],
+      [],
+    ),
   'updatePlatformConfig' : IDL.Func([PlatformConfig], [], []),
   'updateUserRole' : IDL.Func([IDL.Text], [], []),
 });
@@ -265,6 +319,51 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
+  const CartItem = IDL.Record({
+    'productTitle' : IDL.Text,
+    'selectedColor' : IDL.Text,
+    'customizationJson' : IDL.Text,
+    'productId' : IDL.Text,
+    'imageUrl' : IDL.Text,
+    'quantity' : IDL.Nat,
+    'category' : IDL.Text,
+    'price' : IDL.Float64,
+    'selectedSize' : IDL.Text,
+  });
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
+  const Color = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'image' : IDL.Opt(ExternalBlob),
+  });
+  const Fabric = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'image' : IDL.Opt(ExternalBlob),
+  });
+  const CustomizationOptions = IDL.Record({
+    'sleeveStyles' : IDL.Vec(IDL.Text),
+    'colorPatterns' : IDL.Vec(IDL.Text),
+    'neckStyles' : IDL.Vec(IDL.Text),
+    'fabricTypes' : IDL.Vec(IDL.Text),
+    'workTypes' : IDL.Vec(IDL.Text),
+  });
+  const Product = IDL.Record({
+    'id' : IDL.Text,
+    'title' : IDL.Text,
+    'isDeleted' : IDL.Bool,
+    'tailorId' : IDL.Text,
+    'customizationOptions' : CustomizationOptions,
+    'description' : IDL.Text,
+    'category' : IDL.Text,
+    'image' : ExternalBlob,
+    'price' : IDL.Float64,
+  });
+  const WorkType = IDL.Record({
+    'id' : IDL.Text,
+    'name' : IDL.Text,
+    'image' : IDL.Opt(ExternalBlob),
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -281,15 +380,30 @@ export const idlFactory = ({ IDL }) => {
     }),
     'timestamp' : IDL.Int,
   });
-  const Order = IDL.Record({
+  const DeliveryAddress = IDL.Record({
+    'area' : IDL.Text,
+    'city' : IDL.Text,
+    'state' : IDL.Text,
+    'pinCode' : IDL.Text,
+    'houseNo' : IDL.Text,
+  });
+  const ExtendedOrder = IDL.Record({
     'id' : IDL.Text,
+    'customerName' : IDL.Text,
     'status' : IDL.Text,
     'measurementsJson' : IDL.Text,
+    'deliveryAddress' : DeliveryAddress,
+    'isDeleted' : IDL.Bool,
     'tailorId' : IDL.Text,
+    'customerAltPhone' : IDL.Text,
+    'customerPhone' : IDL.Text,
     'customerPrincipal' : IDL.Text,
+    'productImages' : IDL.Vec(IDL.Text),
     'customizationJson' : IDL.Text,
     'estimatedDeliveryDate' : IDL.Text,
     'orderDate' : IDL.Int,
+    'orderHash' : IDL.Text,
+    'paymentMode' : IDL.Text,
     'category' : IDL.Text,
     'listingTitle' : IDL.Text,
     'totalPrice' : IDL.Float64,
@@ -320,6 +434,12 @@ export const idlFactory = ({ IDL }) => {
     'measurements' : IDL.Vec(Measurement),
     'phoneNumber' : IDL.Text,
   });
+  const CoinLedger = IDL.Record({
+    'userId' : IDL.Text,
+    'timestamp' : IDL.Int,
+    'amount' : IDL.Int,
+    'reason' : IDL.Text,
+  });
   const FontWeight = IDL.Variant({
     'normal' : IDL.Null,
     'bold' : IDL.Null,
@@ -331,7 +451,6 @@ export const idlFactory = ({ IDL }) => {
     'color' : IDL.Text,
     'size' : IDL.Nat,
   });
-  const ExternalBlob = IDL.Vec(IDL.Nat8);
   const ColorScheme = IDL.Record({
     'accent' : IDL.Text,
     'background' : IDL.Text,
@@ -365,39 +484,7 @@ export const idlFactory = ({ IDL }) => {
     'applicableCategories' : IDL.Vec(IDL.Text),
     'validUntil' : IDL.Int,
   });
-  const Fabric = IDL.Record({
-    'id' : IDL.Text,
-    'name' : IDL.Text,
-    'image' : IDL.Opt(ExternalBlob),
-  });
   const City = IDL.Record({ 'id' : IDL.Text, 'name' : IDL.Text });
-  const Color = IDL.Record({
-    'id' : IDL.Text,
-    'name' : IDL.Text,
-    'image' : IDL.Opt(ExternalBlob),
-  });
-  const CustomizationOptions = IDL.Record({
-    'sleeveStyles' : IDL.Vec(IDL.Text),
-    'colorPatterns' : IDL.Vec(IDL.Text),
-    'neckStyles' : IDL.Vec(IDL.Text),
-    'fabricTypes' : IDL.Vec(IDL.Text),
-    'workTypes' : IDL.Vec(IDL.Text),
-  });
-  const Product = IDL.Record({
-    'id' : IDL.Text,
-    'title' : IDL.Text,
-    'tailorId' : IDL.Text,
-    'customizationOptions' : CustomizationOptions,
-    'description' : IDL.Text,
-    'category' : IDL.Text,
-    'image' : ExternalBlob,
-    'price' : IDL.Float64,
-  });
-  const WorkType = IDL.Record({
-    'id' : IDL.Text,
-    'name' : IDL.Text,
-    'image' : IDL.Opt(ExternalBlob),
-  });
   const PlatformConfig = IDL.Record({
     'promotions' : IDL.Vec(Promotion),
     'fabrics' : IDL.Vec(Fabric),
@@ -458,25 +545,42 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addToCart' : IDL.Func([CartItem], [], []),
+    'adminAddColor' : IDL.Func([Color], [], []),
+    'adminAddFabric' : IDL.Func([Fabric], [], []),
+    'adminAddProduct' : IDL.Func([Product], [], []),
+    'adminAddWorkType' : IDL.Func([WorkType], [], []),
+    'adminDeleteColor' : IDL.Func([IDL.Text], [], []),
+    'adminDeleteFabric' : IDL.Func([IDL.Text], [], []),
+    'adminDeleteProduct' : IDL.Func([IDL.Text], [], []),
+    'adminDeleteWorkType' : IDL.Func([IDL.Text], [], []),
+    'adminUpdateProduct' : IDL.Func([Product], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'cancelOrder' : IDL.Func([IDL.Text], [], []),
+    'clearCart' : IDL.Func([], [], []),
     'createNotification' : IDL.Func([Notification], [], []),
-    'getAllOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+    'getAllExtendedOrders' : IDL.Func([], [IDL.Vec(ExtendedOrder)], ['query']),
     'getAllTailorProfiles' : IDL.Func([], [IDL.Vec(TailorProfile)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfileV2)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
+    'getCart' : IDL.Func([], [IDL.Vec(CartItem)], ['query']),
+    'getCoinHistory' : IDL.Func([], [IDL.Vec(CoinLedger)], ['query']),
     'getDefaultAppStyle' : IDL.Func([], [AppStyle], ['query']),
-    'getMyOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+    'getLastUpdateTimestamp' : IDL.Func([], [IDL.Int], ['query']),
+    'getMyExtendedOrders' : IDL.Func([], [IDL.Vec(ExtendedOrder)], ['query']),
     'getNotifications' : IDL.Func(
         [IDL.Int],
         [IDL.Vec(Notification)],
         ['query'],
       ),
+    'getOrderById' : IDL.Func([IDL.Text], [IDL.Opt(ExtendedOrder)], ['query']),
     'getPlatformConfig' : IDL.Func([], [IDL.Opt(PlatformConfig)], ['query']),
     'getTailorProfile' : IDL.Func(
         [IDL.Text],
         [IDL.Opt(TailorProfile)],
         ['query'],
       ),
+    'getUserCoinBalance' : IDL.Func([], [IDL.Int], ['query']),
     'getUserProfile' : IDL.Func([], [IDL.Opt(UserProfileV2)], ['query']),
     'getUserProfileByPrincipal' : IDL.Func(
         [IDL.Principal],
@@ -486,14 +590,18 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'isCallerApproved' : IDL.Func([], [IDL.Bool], ['query']),
     'listApprovals' : IDL.Func([], [IDL.Vec(UserApprovalInfo)], ['query']),
-    'placeOrder' : IDL.Func([Order], [IDL.Text], []),
+    'placeExtendedOrder' : IDL.Func([ExtendedOrder], [IDL.Text], []),
+    'removeFromCart' : IDL.Func([IDL.Text], [], []),
     'requestApproval' : IDL.Func([], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfileInput], [], []),
     'saveTailorProfile' : IDL.Func([TailorProfile], [], []),
     'saveUserProfile' : IDL.Func([UserProfileInput], [], []),
     'setApproval' : IDL.Func([IDL.Principal, ApprovalStatus], [], []),
-    'setOrderDeliveryDate' : IDL.Func([IDL.Text, IDL.Text], [], []),
-    'updateOrderStatus' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
+    'updateExtendedOrderStatus' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text],
+        [],
+        [],
+      ),
     'updatePlatformConfig' : IDL.Func([PlatformConfig], [], []),
     'updateUserRole' : IDL.Func([IDL.Text], [], []),
   });

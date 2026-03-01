@@ -112,7 +112,16 @@ export default {
         'banner-slide': {
           from: { opacity: '0', transform: 'scale(1.03)' },
           to: { opacity: '1', transform: 'scale(1)' }
-        }
+        },
+        'spin-slow': {
+          from: { transform: 'rotate(0deg)' },
+          to: { transform: 'rotate(360deg)' }
+        },
+        'check-pop': {
+          '0%': { transform: 'scale(0) rotate(-10deg)', opacity: '0' },
+          '60%': { transform: 'scale(1.2) rotate(5deg)', opacity: '1' },
+          '100%': { transform: 'scale(1) rotate(0deg)', opacity: '1' }
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -120,6 +129,8 @@ export default {
         'fade-in': 'fade-in 0.4s ease-out',
         'slide-in-right': 'slide-in-right 0.3s ease-out',
         'banner-slide': 'banner-slide 0.6s ease-out',
+        'spin-slow': 'spin-slow 1s linear infinite',
+        'check-pop': 'check-pop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
       }
     }
   },
