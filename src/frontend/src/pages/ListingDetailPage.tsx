@@ -76,7 +76,7 @@ export function ListingDetailPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 animate-fade-in">
+    <div className="container mx-auto px-4 py-10 animate-fade-in pb-28 lg:pb-10">
       <Toaster />
       <button
         type="button"
@@ -208,8 +208,11 @@ export function ListingDetailPage() {
           )}
         </div>
       </div>
-      {/* Sticky bottom action bar — mobile only */}
-      <div className="fixed bottom-16 left-0 right-0 z-40 lg:hidden bg-background border-t border-border px-4 py-3 flex gap-3 shadow-xl">
+      {/* Sticky bottom action bar — mobile only, sits ABOVE bottom nav (z-50 nav, z-[55] buttons) */}
+      <div
+        className="fixed left-0 right-0 z-[55] md:hidden bg-background border-t border-border px-4 py-3 flex gap-3 shadow-xl"
+        style={{ bottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <button
           type="button"
           onClick={handleAddToCart}

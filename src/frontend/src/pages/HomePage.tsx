@@ -110,7 +110,7 @@ const MOCK_PRODUCTS: MockProduct[] = [
   },
 ];
 
-const BANNER_SLIDES = [
+const BANNER_SLIDES_HI = [
   {
     id: "b1",
     bgGradient: "linear-gradient(135deg, #1565C0, #303F9F)",
@@ -146,7 +146,43 @@ const BANNER_SLIDES = [
   },
 ];
 
-const CATEGORIES = [
+const BANNER_SLIDES_EN = [
+  {
+    id: "b1",
+    bgGradient: "linear-gradient(135deg, #1565C0, #303F9F)",
+    badge: "🔥 Limited Offer",
+    title: "Special Discount: New Dress Stitching!",
+    subtitle: "Save ₹500 on custom tailoring",
+    cta: "Book Now",
+    image:
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+    discount: "25% OFF",
+  },
+  {
+    id: "b2",
+    bgGradient: "linear-gradient(135deg, #6A1B9A, #880E4F)",
+    badge: "✨ New Collection",
+    title: "Bridal Lehenga Collection 2025",
+    subtitle: "Handcrafted, premium fabrics",
+    cta: "View",
+    image:
+      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=300&fit=crop",
+    discount: "NEW",
+  },
+  {
+    id: "b3",
+    bgGradient: "linear-gradient(135deg, #2E7D32, #00695C)",
+    badge: "👔 Men's Special",
+    title: "Sherwani & Suit Sale!",
+    subtitle: "Festival-ready — starting ₹2999",
+    cta: "Shop Now",
+    image:
+      "https://images.unsplash.com/photo-1550246140-5119ae4790b8?w=400&h=300&fit=crop",
+    discount: "30% OFF",
+  },
+];
+
+const CATEGORIES_HI = [
   { name: "कुर्ता", emoji: "🧥", cat: "Kurtas" },
   { name: "अनारकली", emoji: "👗", cat: "Anarkalis" },
   { name: "लहंगा", emoji: "✨", cat: "Lehengas" },
@@ -155,6 +191,17 @@ const CATEGORIES = [
   { name: "साड़ी ब्लाउज", emoji: "🌸", cat: "Saree Blouses" },
   { name: "ट्राउजर", emoji: "👖", cat: "Trousers" },
   { name: "कपड़े", emoji: "🧵", cat: "fabrics" },
+];
+
+const CATEGORIES_EN = [
+  { name: "Kurta", emoji: "🧥", cat: "Kurtas" },
+  { name: "Anarkali", emoji: "👗", cat: "Anarkalis" },
+  { name: "Lehenga", emoji: "✨", cat: "Lehengas" },
+  { name: "Suit", emoji: "🤵", cat: "Suits" },
+  { name: "Sherwani", emoji: "👘", cat: "Sherwanis" },
+  { name: "Saree Blouse", emoji: "🌸", cat: "Saree Blouses" },
+  { name: "Trouser", emoji: "👖", cat: "Trousers" },
+  { name: "Fabrics", emoji: "🧵", cat: "fabrics" },
 ];
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -172,16 +219,22 @@ function DiscountPercent({
   original,
   current,
 }: { original: number; current: number }) {
+  const { language } = useLanguage();
   const pct = Math.round(((original - current) / original) * 100);
   return (
-    <span className="text-xs font-semibold text-green-600">{pct}% छूट</span>
+    <span className="text-xs font-semibold text-green-600">
+      {pct}
+      {language === "hi" ? "% छूट" : "% OFF"}
+    </span>
   );
 }
 
 function TrendingCard({ product }: { product: MockProduct }) {
   const navigate = useNavigate();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { language } = useLanguage();
   const wishlisted = isWishlisted(product.id);
+  const displayName = language === "hi" ? product.nameHi : product.name;
 
   return (
     <button
@@ -190,20 +243,20 @@ function TrendingCard({ product }: { product: MockProduct }) {
       onClick={() =>
         navigate({ to: "/listings/$id", params: { id: product.id } })
       }
-      aria-label={`${product.nameHi} देखें`}
+      aria-label={`${displayName} view`}
     >
       {/* Image */}
       <div className="relative aspect-[3/4] overflow-hidden bg-gray-100">
         <img
           src={product.image}
-          alt={product.nameHi}
+          alt={displayName}
           loading="lazy"
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
         <div className="absolute top-1.5 left-1.5">
           <span className="trending-badge text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5">
             <TrendingUp className="h-2.5 w-2.5" />
-            ट्रेंडिंग
+            {language === "hi" ? "ट्रेंडिंग" : "Trending"}
           </span>
         </div>
         <button
@@ -212,16 +265,28 @@ function TrendingCard({ product }: { product: MockProduct }) {
             e.stopPropagation();
             toggleWishlist({
               id: product.id,
-              title: product.nameHi,
+              title: displayName,
               price: product.price,
               category: product.category,
               imageUrl: product.image,
             });
             if (!wishlisted)
-              toast.success(`${product.nameHi} विश लिस्ट में जोड़ा! ❤️`);
+              toast.success(
+                language === "hi"
+                  ? `${product.nameHi} विश लिस्ट में जोड़ा! ❤️`
+                  : `${product.name} added to wishlist! ❤️`,
+              );
           }}
           className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-white/90 flex items-center justify-center shadow-sm"
-          aria-label={wishlisted ? "Wishlist से हटाएं" : "Wishlist में जोड़ें"}
+          aria-label={
+            wishlisted
+              ? language === "hi"
+                ? "Wishlist से हटाएं"
+                : "Remove from wishlist"
+              : language === "hi"
+                ? "Wishlist में जोड़ें"
+                : "Add to wishlist"
+          }
         >
           <Heart
             className={cn(
@@ -234,7 +299,7 @@ function TrendingCard({ product }: { product: MockProduct }) {
       {/* Info */}
       <div className="p-2">
         <p className="text-xs font-body font-medium text-foreground truncate">
-          {product.nameHi}
+          {displayName}
         </p>
         <div className="flex items-center gap-1 mt-0.5">
           <StarRating rating={product.rating} />
@@ -292,18 +357,32 @@ function ProductCard({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
+            const displayName =
+              language === "hi" ? product.nameHi : product.name;
             toggleWishlist({
               id: product.id,
-              title: product.nameHi,
+              title: displayName,
               price: product.price,
               category: product.category,
               imageUrl: product.image,
             });
             if (!wishlisted)
-              toast.success(`${product.nameHi} विश लिस्ट में जोड़ा! ❤️`);
+              toast.success(
+                language === "hi"
+                  ? `${product.nameHi} विश लिस्ट में जोड़ा! ❤️`
+                  : `${product.name} added to wishlist! ❤️`,
+              );
           }}
           className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 dark:bg-card/90 flex items-center justify-center shadow-sm hover:bg-white dark:hover:bg-card transition-colors z-10"
-          aria-label={wishlisted ? "Wishlist से हटाएं" : "Wishlist में जोड़ें"}
+          aria-label={
+            wishlisted
+              ? language === "hi"
+                ? "Wishlist से हटाएं"
+                : "Remove from wishlist"
+              : language === "hi"
+                ? "Wishlist में जोड़ें"
+                : "Add to wishlist"
+          }
         >
           <Heart
             className={cn(
@@ -316,11 +395,8 @@ function ProductCard({
 
       {/* Info */}
       <div className="p-3 flex flex-col flex-1">
-        <p className="text-xs font-body text-muted-foreground">
-          {product.name}
-        </p>
         <p className="text-sm font-body font-semibold text-foreground mt-0.5 truncate">
-          {product.nameHi}
+          {language === "hi" ? product.nameHi : product.name}
         </p>
 
         {/* Rating */}
@@ -375,6 +451,8 @@ function HeroBanner() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [animating, setAnimating] = useState(false);
   const navigate = useNavigate();
+  const { language } = useLanguage();
+  const BANNER_SLIDES = language === "hi" ? BANNER_SLIDES_HI : BANNER_SLIDES_EN;
 
   const goTo = useCallback(
     (index: number) => {
@@ -391,7 +469,7 @@ function HeroBanner() {
       setActiveIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [BANNER_SLIDES.length]);
 
   const slide = BANNER_SLIDES[activeIndex];
 
@@ -500,15 +578,21 @@ const DEFAULT_CUSTOMIZATION: CustomizationOptions = {
 export function HomePage() {
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const { language } = useLanguage();
+  const CATEGORIES = language === "hi" ? CATEGORIES_HI : CATEGORIES_EN;
 
   const handleAddToCart = useCallback(
     (productId: string) => {
       const product = MOCK_PRODUCTS.find((p) => p.id === productId);
       if (!product) return;
       addItem(buildListing(product), DEFAULT_CUSTOMIZATION);
-      toast.success(`${product.nameHi} कार्ट में जोड़ा गया! 🛒`);
+      toast.success(
+        language === "hi"
+          ? `${product.nameHi} कार्ट में जोड़ा गया! 🛒`
+          : `${product.name} added to cart! 🛒`,
+      );
     },
-    [addItem],
+    [addItem, language],
   );
 
   const handleBuyNow = useCallback(
@@ -567,10 +651,12 @@ export function HomePage() {
         <div className="flex items-center justify-between px-3 mb-3">
           <div>
             <h2 className="font-display font-bold text-foreground text-base leading-tight">
-              आज का ट्रेंडिंग
+              {language === "hi" ? "आज का ट्रेंडिंग" : "Today's Trending"}
             </h2>
             <p className="text-xs font-body text-muted-foreground mt-0.5">
-              हाईएस्ट रेटेड डिज़ाइन्स
+              {language === "hi"
+                ? "हाईएस्ट रेटेड डिज़ाइन्स"
+                : "Highest Rated Designs"}
             </p>
           </div>
           <button
@@ -578,7 +664,8 @@ export function HomePage() {
             onClick={() => navigate({ to: "/catalog" })}
             className="flex items-center gap-0.5 text-primary text-xs font-semibold"
           >
-            सभी देखें <ChevronRight className="h-4 w-4" />
+            {language === "hi" ? "सभी देखें" : "View All"}{" "}
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
@@ -591,13 +678,13 @@ export function HomePage() {
             type="button"
             className="snap-item shrink-0 w-36 bg-primary/5 rounded-xl overflow-hidden cursor-pointer flex flex-col items-center justify-center gap-2 border border-primary/20 hover:bg-primary/10 transition-colors"
             onClick={() => navigate({ to: "/catalog" })}
-            aria-label="सभी ट्रेंडिंग प्रोडक्ट देखें"
+            aria-label="View all trending products"
           >
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <ChevronRight className="h-5 w-5 text-primary" />
             </div>
             <p className="text-xs font-semibold text-primary text-center px-2">
-              और देखें
+              {language === "hi" ? "और देखें" : "View More"}
             </p>
           </button>
         </div>
@@ -622,10 +709,12 @@ export function HomePage() {
           </div>
           <div className="relative">
             <p className="text-white font-display font-bold text-sm">
-              Free Delivery
+              {language === "hi" ? "फ्री डिलीवरी" : "Free Delivery"}
             </p>
             <p className="text-white/80 text-xs font-body mt-0.5">
-              ₹999+ के ऑर्डर पर फ्री डिलीवरी
+              {language === "hi"
+                ? "₹999+ के ऑर्डर पर फ्री डिलीवरी"
+                : "Free delivery on orders ₹999+"}
             </p>
           </div>
           <button
@@ -633,7 +722,7 @@ export function HomePage() {
             onClick={() => navigate({ to: "/catalog" })}
             className="relative shrink-0 bg-white text-primary text-xs font-bold px-3 py-1.5 rounded-full hover:bg-white/95 transition-colors"
           >
-            शॉप करें
+            {language === "hi" ? "शॉप करें" : "Shop Now"}
           </button>
         </div>
       </section>
@@ -643,10 +732,10 @@ export function HomePage() {
         <div className="flex items-center justify-between px-3 mb-3">
           <div>
             <h2 className="font-display font-bold text-foreground text-base leading-tight">
-              हमारे चुनिंदा डिज़ाइन्स
+              {language === "hi" ? "हमारे चुनिंदा डिज़ाइन्स" : "Featured Designs"}
             </h2>
             <p className="text-xs font-body text-muted-foreground mt-0.5">
-              बेस्ट सेलर्स
+              {language === "hi" ? "बेस्ट सेलर्स" : "Best Sellers"}
             </p>
           </div>
           <button
@@ -654,7 +743,8 @@ export function HomePage() {
             onClick={() => navigate({ to: "/catalog" })}
             className="flex items-center gap-0.5 text-primary text-xs font-semibold"
           >
-            सभी देखें <ChevronRight className="h-4 w-4" />
+            {language === "hi" ? "सभी देखें" : "View All"}{" "}
+            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
@@ -676,7 +766,8 @@ export function HomePage() {
             onClick={() => navigate({ to: "/catalog" })}
             className="w-full py-3 border border-primary text-primary text-sm font-semibold rounded-xl hover:bg-primary/5 transition-colors flex items-center justify-center gap-1.5"
           >
-            और डिज़ाइन्स देखें <ArrowRight className="h-4 w-4" />
+            {language === "hi" ? "और डिज़ाइन्स देखें" : "View More Designs"}{" "}
+            <ArrowRight className="h-4 w-4" />
           </button>
         </div>
       </section>
@@ -687,15 +778,47 @@ export function HomePage() {
         aria-label="Why choose Fit Also"
       >
         <h2 className="font-display font-bold text-foreground text-base mb-4 text-center">
-          Fit Also क्यों चुनें?
+          {language === "hi" ? "Fit Also क्यों चुनें?" : "Why Choose Fit Also?"}
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { icon: "✂️", title: "कस्टम सिलाई", desc: "आपके नाप से बना" },
-            { icon: "⭐", title: "प्रीमियम कपड़े", desc: "बेस्ट क्वालिटी" },
-            { icon: "🚚", title: "पैन-इंडिया", desc: "घर तक डिलीवरी" },
-            { icon: "🛡️", title: "क्वालिटी गारंटी", desc: "100% संतुष्टि" },
-          ].map((item) => (
+          {(language === "hi"
+            ? [
+                { icon: "✂️", title: "कस्टम सिलाई", desc: "आपके नाप से बना" },
+                {
+                  icon: "⭐",
+                  title: "प्रीमियम कपड़े",
+                  desc: "बेस्ट क्वालिटी",
+                },
+                { icon: "🚚", title: "पैन-इंडिया", desc: "घर तक डिलीवरी" },
+                {
+                  icon: "🛡️",
+                  title: "क्वालिटी गारंटी",
+                  desc: "100% संतुष्टि",
+                },
+              ]
+            : [
+                {
+                  icon: "✂️",
+                  title: "Custom Stitching",
+                  desc: "Made to your measurements",
+                },
+                {
+                  icon: "⭐",
+                  title: "Premium Fabrics",
+                  desc: "Best quality",
+                },
+                {
+                  icon: "🚚",
+                  title: "Pan-India",
+                  desc: "Delivery at doorstep",
+                },
+                {
+                  icon: "🛡️",
+                  title: "Quality Guarantee",
+                  desc: "100% satisfaction",
+                },
+              ]
+          ).map((item) => (
             <div
               key={item.title}
               className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/50 gap-2"

@@ -4132,14 +4132,15 @@ function CustomerAnalyticsSection() {
 // ─── Main AdminPanel Component ────────────────────────────────────────────────
 
 export default function AdminPanel() {
-  const { identity } = useInternetIdentity();
-  const { actor } = useActor();
+  const { identity, login } = useInternetIdentity();
+  const { actor, isFetching: actorFetching } = useActor();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [customizationPanelOpen, setCustomizationPanelOpen] = useState(false);
   const [showAdminClaim, setShowAdminClaim] = useState(false);
   const [claimEmail, setClaimEmail] = useState("");
+  const [claimError, setClaimError] = useState("");
 
   // Initialize localStorage defaults
   useEffect(() => {
@@ -4185,6 +4186,10 @@ export default function AdminPanel() {
   // Combine email-based and backend-based admin check
   const isAdmin = isEmailAdmin || isAdminBackend;
 
+  // Is the system still initializing (actor loading OR admin check running)?
+  const isInitializing =
+    actorFetching || (!!actor && !!identity && checkingAdmin);
+
   // Fetch approvals
   const { data: approvals = [], refetch: refetchApprovals } = useQuery({
     queryKey: ["approvals"],
@@ -4196,30 +4201,46 @@ export default function AdminPanel() {
   });
 
   const handleClaimAdmin = () => {
+    setClaimError("");
     if (claimEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-      localStorage.setItem("adminEmail", claimEmail);
+      localStorage.setItem("adminEmail", ADMIN_EMAIL);
+      localStorage.setItem("userEmail", ADMIN_EMAIL);
       setShowAdminClaim(false);
       window.location.reload();
+    } else {
+      setClaimError("Email does not match admin records. Please try again.");
     }
   };
 
   if (!identity) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="border-0 shadow-xl p-8 text-center max-w-sm">
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="border-0 shadow-xl p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <LayoutDashboard className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-xl font-bold mb-2">Admin Access Required</h2>
-          <p className="text-muted-foreground">
-            Please log in to access the admin dashboard.
+          <h2 className="text-xl font-bold mb-2">FitAlso Admin Panel</h2>
+          <p className="text-muted-foreground mb-6">
+            Pehle login karein, phir admin access claim karein.
+          </p>
+          <Button
+            size="lg"
+            className="w-full mb-3 bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={login}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Login / Sign In
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Login ke baad "Claim Admin" ka option aayega
           </p>
         </Card>
       </div>
     );
   }
 
-  if (checkingAdmin && !isEmailAdmin) {
+  // Show loading while actor is being created OR while admin check is in progress
+  if ((isInitializing || checkingAdmin) && !isEmailAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -4230,49 +4251,72 @@ export default function AdminPanel() {
     );
   }
 
-  if (!isAdmin && !showAdminClaim) {
+  // Show admin claim screen either when explicitly triggered OR when not yet verified as admin
+  if (showAdminClaim || !isAdmin) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="border-0 shadow-xl p-8 text-center max-w-md">
-          <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-            <XCircle className="w-8 h-8 text-destructive" />
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="border-0 shadow-xl p-8 max-w-md w-full">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <LayoutDashboard className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">FitAlso Admin Panel</h2>
+              <p className="text-xs text-muted-foreground">
+                Super Admin Access
+              </p>
+            </div>
           </div>
-          <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-          <p className="text-muted-foreground mb-4">
-            You don't have admin privileges to access this dashboard.
-          </p>
-          <Button onClick={() => setShowAdminClaim(true)}>
-            I am the Admin - Click to Claim Access
-          </Button>
-        </Card>
-      </div>
-    );
-  }
 
-  if (showAdminClaim) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="border-0 shadow-xl p-8 max-w-md">
-          <h2 className="text-xl font-bold mb-4">Claim Admin Access</h2>
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center gap-2 flex-1">
+              <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm font-medium text-green-600">
+                Logged In
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-2 flex-1">
+              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+                <span className="text-xs text-white font-bold">2</span>
+              </div>
+              <span className="text-sm font-medium">Claim Admin</span>
+            </div>
+          </div>
+
           <p className="text-sm text-muted-foreground mb-4">
-            Enter your admin email to verify your identity:
+            Apna admin email enter karein aur "Claim Admin Access" click karein:
           </p>
           <Input
             type="email"
-            placeholder="Enter admin email"
+            placeholder="FUTURETAILORSFORYOU@gmail.com"
             value={claimEmail}
-            onChange={(e) => setClaimEmail(e.target.value)}
+            onChange={(e) => {
+              setClaimEmail(e.target.value);
+              setClaimError("");
+            }}
             onKeyDown={(e) => e.key === "Enter" && handleClaimAdmin()}
-            className="mb-4"
+            className="mb-2"
+            autoFocus
           />
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setShowAdminClaim(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleClaimAdmin} disabled={!claimEmail.trim()}>
-              Verify & Access
-            </Button>
-          </div>
+          {claimError && (
+            <p className="text-sm text-destructive mb-3">{claimError}</p>
+          )}
+          <Button
+            onClick={handleClaimAdmin}
+            disabled={!claimEmail.trim()}
+            className="w-full mt-2 bg-primary text-primary-foreground"
+            size="lg"
+          >
+            <LayoutDashboard className="w-4 h-4 mr-2" />
+            Claim Admin Access
+          </Button>
+          <p className="text-xs text-muted-foreground mt-3 text-center">
+            Sirf authorized admin hi yahan access kar sakte hain
+          </p>
         </Card>
       </div>
     );
