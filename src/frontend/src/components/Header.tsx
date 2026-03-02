@@ -1,9 +1,7 @@
 import { cn } from "@/lib/utils";
 import { useNavigate } from "@tanstack/react-router";
-import { Search, Settings, Shield, ShoppingCart, X } from "lucide-react";
-import type React from "react";
+import { Shield, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useCart } from "../hooks/useCart";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useLanguage } from "../hooks/useLanguage";
 import { useGetCallerUserProfile, useIsCallerAdmin } from "../hooks/useQueries";
@@ -17,10 +15,7 @@ export function Header({ className }: HeaderProps) {
   const { language } = useLanguage();
   const { identity } = useInternetIdentity();
   const { data: profile } = useGetCallerUserProfile();
-  const { totalItems } = useCart();
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   const { data: isAdminFromBackend } = useIsCallerAdmin();
@@ -33,150 +28,104 @@ export function Header({ className }: HeaderProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate({ to: "/catalog", search: { q: searchQuery } as any });
-    }
-  };
-
-  const handleClearSearch = () => setSearchQuery("");
-
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 bg-white transition-shadow duration-200",
-        scrolled ? "shadow-header" : "shadow-xs",
+        "sticky top-0 z-50 bg-background transition-shadow duration-200",
+        scrolled ? "shadow-md" : "shadow-sm",
         className,
       )}
     >
-      {/* Top bar: Logo + Search + Actions */}
-      <div className="bg-primary px-3 py-2.5">
-        <div className="max-w-screen-xl mx-auto flex items-center gap-3">
-          {/* Brand */}
+      {/* Top bar: Banner background with logo + icons */}
+      <div
+        className="px-3 py-2 relative"
+        style={{
+          backgroundImage:
+            "url('/assets/uploads/IMG_20260228_083225_533-1-2.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        {/* Subtle dark overlay — keep banner visible */}
+        <div className="absolute inset-0 bg-black/40" />
+
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between relative z-10">
+          {/* Left: Logo + Brand name stacked below logo */}
           <button
             type="button"
+            data-ocid="header.home.button"
             onClick={() => navigate({ to: "/" })}
-            className="shrink-0 flex items-center gap-2 leading-none"
+            className="shrink-0 flex flex-col items-center leading-none gap-0.5 ml-0"
             aria-label="Fit Also Home"
           >
-            <img
-              src="/assets/generated/fitalso-logo-transparent.dim_120x120.png"
-              alt="Fit Also"
-              className="h-8 w-8 object-contain drop-shadow-sm"
-            />
-            <div className="flex flex-col items-start">
-              <span className="font-display font-extrabold text-xl text-white tracking-widest uppercase leading-none">
-                FIT ALSO
-              </span>
-              <span className="text-white/75 text-[9px] font-body tracking-wider leading-none mt-0.5 hidden sm:block">
-                {language === "hi" ? "कस्टम सिलाई" : "Custom Tailoring"}
-              </span>
+            {/* Round logo — pure original color, no white overlay/filter/blendMode */}
+            <div className="h-12 w-12 rounded-full overflow-hidden shrink-0">
+              <img
+                src="/assets/uploads/1772254655818-1.png"
+                alt="Fit Also Logo"
+                className="h-full w-full object-cover"
+                style={{
+                  boxShadow: "none",
+                  border: "none",
+                  outline: "none",
+                  background: "transparent",
+                }}
+              />
             </div>
+            {/* Silver crystal "FIT ALSO" text below logo */}
+            <span
+              className="text-[11px] font-extrabold tracking-[0.18em] uppercase leading-none"
+              style={{
+                background:
+                  "linear-gradient(135deg, #e8e8e8 0%, #c0c0c0 25%, #ffffff 50%, #a8a8a8 75%, #d4d4d4 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+                filter: "drop-shadow(0 0 4px rgba(255,255,255,0.6))",
+                textShadow: "none",
+              }}
+            >
+              FIT ALSO
+            </span>
           </button>
 
-          {/* Search Bar */}
-          <form onSubmit={handleSearch} className="flex-1 min-w-0">
-            <div
-              className={cn(
-                "flex items-center bg-white rounded-sm overflow-hidden transition-all duration-200",
-                searchFocused ? "ring-2 ring-accent" : "",
-              )}
-            >
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder={
-                  language === "hi" ? "डिज़ाइन खोजें..." : "Search designs..."
-                }
-                className="flex-1 px-3 py-2 text-sm font-body text-foreground placeholder:text-muted-foreground bg-transparent outline-none min-w-0"
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={handleClearSearch}
-                  className="p-1.5 text-muted-foreground hover:text-foreground"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
+          {/* Right: Profile icon ONLY (Search + Cart moved to BottomNav) */}
+          <div className="flex items-end pb-2 gap-1 shrink-0">
+            {/* Profile icon (small) — navigates to settings/dashboard */}
+            {isAuthenticated ? (
               <button
-                type="submit"
-                className="bg-accent/90 hover:bg-accent px-3 py-2 text-accent-foreground flex items-center gap-1.5 shrink-0 transition-colors"
+                type="button"
+                data-ocid="header.profile.button"
+                onClick={() => navigate({ to: "/settings" })}
+                className="flex items-center justify-center w-9 h-9 text-white hover:bg-white/15 rounded-full transition-colors"
+                aria-label={language === "hi" ? "प्रोफ़ाइल" : "Profile"}
               >
-                <Search className="h-4 w-4" />
-                <span className="text-xs font-semibold hidden sm:block">
-                  {language === "hi" ? "खोजें" : "Search"}
-                </span>
+                <User className="h-5 w-5" />
               </button>
-            </div>
-          </form>
-
-          {/* Right Actions */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* Cart */}
-            <button
-              type="button"
-              onClick={() => navigate({ to: "/cart" })}
-              className="relative flex flex-col items-center gap-0.5 px-2 py-1 text-white hover:bg-white/10 rounded transition-colors"
-              aria-label="Cart"
-            >
-              <div className="relative">
-                <ShoppingCart className="h-5 w-5" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-secondary text-white text-[9px] font-bold flex items-center justify-center border border-primary">
-                    {totalItems > 9 ? "9+" : totalItems}
-                  </span>
-                )}
+            ) : (
+              <div className="flex items-center px-1">
+                <LoginButton />
               </div>
-              <span className="text-[10px] font-body hidden sm:block">
-                {language === "hi" ? "कार्ट" : "Cart"}
-              </span>
-            </button>
-
-            {/* Settings icon — always visible */}
-            <button
-              type="button"
-              onClick={() => navigate({ to: "/settings" })}
-              className="flex flex-col items-center gap-0.5 px-2 py-1 text-white hover:bg-white/10 rounded transition-colors"
-              aria-label="Settings"
-            >
-              <Settings className="h-5 w-5" />
-              <span className="text-[10px] font-body hidden sm:block">
-                {language === "hi" ? "सेटिंग्स" : "Settings"}
-              </span>
-            </button>
+            )}
 
             {/* Admin shield — only for admins */}
             {isAdmin && (
               <button
                 type="button"
+                data-ocid="header.admin.button"
                 onClick={() => navigate({ to: "/admin" })}
-                className="flex flex-col items-center gap-0.5 px-2 py-1 text-white hover:bg-white/10 rounded transition-colors"
+                className="flex items-center justify-center w-9 h-9 text-white hover:bg-white/15 rounded-full transition-colors"
                 aria-label="Admin Panel"
               >
                 <Shield className="h-5 w-5" />
-                <span className="text-[10px] font-body hidden sm:block">
-                  {language === "hi" ? "एडमिन" : "Admin"}
-                </span>
               </button>
-            )}
-
-            {/* Login button — only when not authenticated */}
-            {!isAuthenticated && (
-              <div className="flex flex-col items-center gap-0.5 px-1 py-1">
-                <LoginButton />
-              </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Category quick nav — desktop only */}
-      <div className="hidden md:block bg-white border-b border-border">
+      {/* Category quick nav — desktop only (Fabrics removed) */}
+      <div className="hidden md:block bg-background border-b border-border">
         <div className="max-w-screen-xl mx-auto px-4">
           <nav
             className="flex items-center gap-1 overflow-x-auto scrollbar-none"
@@ -194,7 +143,6 @@ export function Header({ className }: HeaderProps) {
                   { label: "मेन्स सूट", to: "/catalog?category=Suits" },
                   { label: "शेरवानी", to: "/catalog?category=Sherwanis" },
                   { label: "लहंगा", to: "/catalog?category=Lehengas" },
-                  { label: "कपड़े", to: "/catalog?category=fabrics" },
                 ]
               : [
                   { label: "Home", to: "/" },
@@ -207,7 +155,6 @@ export function Header({ className }: HeaderProps) {
                   { label: "Men's Suits", to: "/catalog?category=Suits" },
                   { label: "Sherwanis", to: "/catalog?category=Sherwanis" },
                   { label: "Lehengas", to: "/catalog?category=Lehengas" },
-                  { label: "Fabrics", to: "/catalog?category=fabrics" },
                 ]
             ).map((item) => (
               <button

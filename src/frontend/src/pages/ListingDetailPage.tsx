@@ -76,7 +76,7 @@ export function ListingDetailPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-10 animate-fade-in pb-28 lg:pb-10">
+    <div className="container mx-auto px-4 py-10 animate-fade-in pb-36 lg:pb-10">
       <Toaster />
       <button
         type="button"

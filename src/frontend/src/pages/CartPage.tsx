@@ -82,7 +82,7 @@ export function CartPage() {
   const grandTotal = totalPrice + deliveryCharge;
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-36">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-primary text-white px-4 py-3 flex items-center gap-3 shadow-md">
         <button
@@ -274,8 +274,8 @@ export function CartPage() {
         </div>
       </div>
 
-      {/* Fixed bottom checkout bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
+      {/* Fixed bottom checkout bar — sits above BottomNav (h-14 = 56px) */}
+      <div className="fixed bottom-14 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">

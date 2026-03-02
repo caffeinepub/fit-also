@@ -9,7 +9,8 @@ import {
   TrendingUp,
   Zap,
 } from "lucide-react";
-import React, { useState, useEffect, useCallback } from "react";
+import type React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProductImageSlider } from "../components/ProductImageSlider";
 import { useCart } from "../hooks/useCart";
@@ -81,7 +82,7 @@ const MOCK_PRODUCTS: MockProduct[] = [
     rating: 4.7,
     reviews: 156,
     image:
-      "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1609051876096-b44a3a3a6a1b?w=300&h=400&fit=crop",
     category: "Lehengas",
   },
   {
@@ -105,15 +106,183 @@ const MOCK_PRODUCTS: MockProduct[] = [
     rating: 4.8,
     reviews: 203,
     image:
-      "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=300&h=400&fit=crop",
+      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=300&h=400&fit=crop",
     category: "Sherwanis",
+  },
+  {
+    id: "7",
+    name: "Embroidered Kurti",
+    nameHi: "कढ़ाई कुर्ती",
+    price: 1599,
+    originalPrice: 2200,
+    rating: 4.6,
+    reviews: 142,
+    image:
+      "https://images.unsplash.com/photo-1594938298603-c8148c4b4357?w=300&h=400&fit=crop",
+    category: "Kurtas",
+  },
+  {
+    id: "8",
+    name: "Silk Palazzo Set",
+    nameHi: "सिल्क पलाज़ो सेट",
+    price: 2800,
+    originalPrice: 3600,
+    rating: 4.7,
+    reviews: 98,
+    image:
+      "https://images.unsplash.com/photo-1614251055880-ee96e4803393?w=300&h=400&fit=crop",
+    category: "Suits",
+  },
+  {
+    id: "9",
+    name: "Heavy Lehenga Choli",
+    nameHi: "हेवी लहंगा चोली",
+    price: 5500,
+    originalPrice: 7000,
+    rating: 4.9,
+    reviews: 267,
+    image:
+      "https://images.unsplash.com/photo-1596900779744-2489d0eedf30?w=300&h=400&fit=crop",
+    category: "Lehengas",
+  },
+  {
+    id: "10",
+    name: "Cotton Salwar Suit",
+    nameHi: "कॉटन सलवार सूट",
+    price: 1100,
+    originalPrice: 1500,
+    rating: 4.4,
+    reviews: 73,
+    image:
+      "https://images.unsplash.com/photo-1588701023429-9e8b657cf7c8?w=300&h=400&fit=crop",
+    category: "Suits",
+  },
+  {
+    id: "11",
+    name: "Banarasi Blouse",
+    nameHi: "बनारसी ब्लाउज",
+    price: 2200,
+    originalPrice: 2900,
+    rating: 4.8,
+    reviews: 189,
+    image:
+      "https://images.unsplash.com/photo-1593173886081-ecab7d0cf6a5?w=300&h=400&fit=crop",
+    category: "Saree Blouses",
+  },
+  {
+    id: "12",
+    name: "Jodhpuri Bandhgala",
+    nameHi: "जोधपुरी बंधगला",
+    price: 3800,
+    originalPrice: 5000,
+    rating: 4.9,
+    reviews: 134,
+    image:
+      "https://images.unsplash.com/photo-1570976447640-ac859083963f?w=300&h=400&fit=crop",
+    category: "Sherwanis",
+  },
+  {
+    id: "13",
+    name: "Flared Anarkali Gown",
+    nameHi: "फ्लेयर्ड अनारकली गाउन",
+    price: 3100,
+    originalPrice: 4000,
+    rating: 4.7,
+    reviews: 211,
+    image:
+      "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=300&h=400&fit=crop",
+    category: "Anarkalis",
+  },
+  {
+    id: "14",
+    name: "Pathani Kurta Set",
+    nameHi: "पठानी कुर्ता सेट",
+    price: 1750,
+    originalPrice: 2300,
+    rating: 4.5,
+    reviews: 65,
+    image:
+      "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=300&h=400&fit=crop",
+    category: "Kurtas",
+  },
+  {
+    id: "15",
+    name: "Party Wear Saree Blouse",
+    nameHi: "पार्टी वेयर साड़ी ब्लाउज",
+    price: 1950,
+    originalPrice: 2600,
+    rating: 4.6,
+    reviews: 108,
+    image:
+      "https://images.unsplash.com/photo-1617727553252-65863c156eb9?w=300&h=400&fit=crop",
+    category: "Saree Blouses",
+  },
+  {
+    id: "16",
+    name: "Wedding Sherwani",
+    nameHi: "वेडिंग शेरवानी",
+    price: 6500,
+    originalPrice: 8500,
+    rating: 5.0,
+    reviews: 322,
+    image:
+      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=300&h=400&fit=crop",
+    category: "Sherwanis",
+  },
+  {
+    id: "17",
+    name: "Chikankari Kurti",
+    nameHi: "चिकनकारी कुर्ती",
+    price: 1450,
+    originalPrice: 1900,
+    rating: 4.6,
+    reviews: 154,
+    image:
+      "https://images.unsplash.com/photo-1583482183021-bd3f0977b5e5?w=300&h=400&fit=crop",
+    category: "Kurtas",
+  },
+  {
+    id: "18",
+    name: "Velvet Lehenga",
+    nameHi: "वेलवेट लहंगा",
+    price: 4200,
+    originalPrice: 5500,
+    rating: 4.8,
+    reviews: 176,
+    image:
+      "https://images.unsplash.com/photo-1519735777090-ec97162dc266?w=300&h=400&fit=crop",
+    category: "Lehengas",
+  },
+  {
+    id: "19",
+    name: "Linen Blazer Suit",
+    nameHi: "लिनन ब्लेज़र सूट",
+    price: 3400,
+    originalPrice: 4500,
+    rating: 4.7,
+    reviews: 91,
+    image:
+      "https://images.unsplash.com/photo-1544441893-675973e31985?w=300&h=400&fit=crop",
+    category: "Suits",
+  },
+  {
+    id: "20",
+    name: "Mirror Work Anarkali",
+    nameHi: "मिरर वर्क अनारकली",
+    price: 2750,
+    originalPrice: 3500,
+    rating: 4.8,
+    reviews: 243,
+    image:
+      "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=300&h=400&fit=crop",
+    category: "Anarkalis",
   },
 ];
 
 const BANNER_SLIDES_HI = [
   {
     id: "b1",
-    bgGradient: "linear-gradient(135deg, #1565C0, #303F9F)",
+    bgGradient: "linear-gradient(135deg, #1a1a1a, #2d2d2d)",
     badge: "🔥 सीमित ऑफर",
     title: "विशेष छूट: नई ड्रेस सिलाई!",
     subtitle: "कस्टम सिलाई पर ₹500 की बचत करें",
@@ -124,7 +293,7 @@ const BANNER_SLIDES_HI = [
   },
   {
     id: "b2",
-    bgGradient: "linear-gradient(135deg, #6A1B9A, #880E4F)",
+    bgGradient: "linear-gradient(135deg, #2a2a2a, #404040)",
     badge: "✨ नया कलेक्शन",
     title: "ब्राइडल लहंगा कलेक्शन 2025",
     subtitle: "हस्त-निर्मित, प्रीमियम कपड़े",
@@ -135,7 +304,7 @@ const BANNER_SLIDES_HI = [
   },
   {
     id: "b3",
-    bgGradient: "linear-gradient(135deg, #2E7D32, #00695C)",
+    bgGradient: "linear-gradient(135deg, #1c1c1c, #383838)",
     badge: "👔 मेन्स स्पेशल",
     title: "शेरवानी और सूट सेल!",
     subtitle: "त्योहारों के लिए तैयार — ₹2999 से शुरू",
@@ -149,7 +318,7 @@ const BANNER_SLIDES_HI = [
 const BANNER_SLIDES_EN = [
   {
     id: "b1",
-    bgGradient: "linear-gradient(135deg, #1565C0, #303F9F)",
+    bgGradient: "linear-gradient(135deg, #1a1a1a, #2d2d2d)",
     badge: "🔥 Limited Offer",
     title: "Special Discount: New Dress Stitching!",
     subtitle: "Save ₹500 on custom tailoring",
@@ -160,7 +329,7 @@ const BANNER_SLIDES_EN = [
   },
   {
     id: "b2",
-    bgGradient: "linear-gradient(135deg, #6A1B9A, #880E4F)",
+    bgGradient: "linear-gradient(135deg, #2a2a2a, #404040)",
     badge: "✨ New Collection",
     title: "Bridal Lehenga Collection 2025",
     subtitle: "Handcrafted, premium fabrics",
@@ -171,7 +340,7 @@ const BANNER_SLIDES_EN = [
   },
   {
     id: "b3",
-    bgGradient: "linear-gradient(135deg, #2E7D32, #00695C)",
+    bgGradient: "linear-gradient(135deg, #1c1c1c, #383838)",
     badge: "👔 Men's Special",
     title: "Sherwani & Suit Sale!",
     subtitle: "Festival-ready — starting ₹2999",
@@ -190,7 +359,6 @@ const CATEGORIES_HI = [
   { name: "शेरवानी", emoji: "👘", cat: "Sherwanis" },
   { name: "साड़ी ब्लाउज", emoji: "🌸", cat: "Saree Blouses" },
   { name: "ट्राउजर", emoji: "👖", cat: "Trousers" },
-  { name: "कपड़े", emoji: "🧵", cat: "fabrics" },
 ];
 
 const CATEGORIES_EN = [
@@ -201,7 +369,6 @@ const CATEGORIES_EN = [
   { name: "Sherwani", emoji: "👘", cat: "Sherwanis" },
   { name: "Saree Blouse", emoji: "🌸", cat: "Saree Blouses" },
   { name: "Trouser", emoji: "👖", cat: "Trousers" },
-  { name: "Fabrics", emoji: "🧵", cat: "fabrics" },
 ];
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -239,7 +406,7 @@ function TrendingCard({ product }: { product: MockProduct }) {
   return (
     <button
       type="button"
-      className="snap-item shrink-0 w-36 bg-white rounded-xl overflow-hidden card-shadow hover:card-shadow-hover transition-shadow cursor-pointer group text-left"
+      className="snap-item shrink-0 w-36 bg-card rounded-xl overflow-hidden card-shadow hover:card-shadow-hover transition-shadow cursor-pointer group text-left"
       onClick={() =>
         navigate({ to: "/listings/$id", params: { id: product.id } })
       }
@@ -449,94 +616,146 @@ function ProductCard({
 
 function HeroBanner() {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [animating, setAnimating] = useState(false);
   const navigate = useNavigate();
   const { language } = useLanguage();
   const BANNER_SLIDES = language === "hi" ? BANNER_SLIDES_HI : BANNER_SLIDES_EN;
+  const touchStartX = useRef<number>(0);
+  const autoSlideRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startAutoSlide = useCallback(() => {
+    if (autoSlideRef.current) clearInterval(autoSlideRef.current);
+    autoSlideRef.current = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+    }, 3000);
+  }, [BANNER_SLIDES.length]);
+
+  useEffect(() => {
+    startAutoSlide();
+    return () => {
+      if (autoSlideRef.current) clearInterval(autoSlideRef.current);
+    };
+  }, [startAutoSlide]);
 
   const goTo = useCallback(
     (index: number) => {
-      if (animating) return;
-      setAnimating(true);
       setActiveIndex(index);
-      setTimeout(() => setAnimating(false), 600);
+      startAutoSlide();
     },
-    [animating],
+    [startAutoSlide],
   );
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
-    }, 4000);
-    return () => clearInterval(interval);
-  }, [BANNER_SLIDES.length]);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    if (autoSlideRef.current) clearInterval(autoSlideRef.current);
+  };
 
-  const slide = BANNER_SLIDES[activeIndex];
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) {
+        setActiveIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+      } else {
+        setActiveIndex(
+          (prev) => (prev - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length,
+        );
+      }
+    }
+    startAutoSlide();
+  };
 
   return (
     <section
       className="relative overflow-hidden"
       aria-label="Promotional banners"
     >
-      {/* Slide */}
+      {/* Sliding track */}
       <div
-        className="relative min-h-[200px] sm:min-h-[260px] flex items-center overflow-hidden"
-        style={{ background: slide.bgGradient }}
+        className="min-h-[200px] sm:min-h-[260px] overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        {/* Background image */}
-        <div className="absolute right-0 top-0 bottom-0 w-1/2 sm:w-2/5 pointer-events-none">
-          <img
-            src={slide.image}
-            alt=""
-            aria-hidden="true"
-            className="w-full h-full object-cover opacity-40 sm:opacity-60"
-            loading="eager"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
-        </div>
-
-        {/* Content */}
-        <div className="relative z-10 px-4 sm:px-8 py-6 max-w-[62%] sm:max-w-[55%]">
-          <div className="flex items-center flex-wrap gap-2 mb-3">
-            <span className="text-white/90 text-[10px] font-semibold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/20">
-              {slide.badge}
-            </span>
-            <span className="inline-flex items-center gap-1 bg-secondary text-white text-xs font-bold px-2.5 py-1 rounded-full">
-              <Zap className="h-3 w-3" />
-              {slide.discount}
-            </span>
-          </div>
-          <h2 className="font-display font-bold text-white text-lg sm:text-2xl leading-tight mb-2">
-            {slide.title}
-          </h2>
-          <p className="text-white/80 text-xs sm:text-sm font-body mb-4">
-            {slide.subtitle}
-          </p>
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/catalog" })}
-            className="inline-flex items-center gap-1.5 bg-white text-primary font-semibold text-xs sm:text-sm px-4 py-2 rounded-full hover:bg-white/95 active:scale-95 transition-all shadow-sm"
-          >
-            {slide.cta}
-            <ArrowRight className="h-3.5 w-3.5" />
-          </button>
-        </div>
-
-        {/* Dot indicators */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
-          {BANNER_SLIDES.map((s, i) => (
+        {/* Track — all slides side by side */}
+        <div
+          className="flex"
+          style={{
+            transform: `translateX(-${activeIndex * 100}%)`,
+            transition: "transform 0.5s ease-in-out",
+            width: `${BANNER_SLIDES.length * 100}%`,
+          }}
+        >
+          {BANNER_SLIDES.map((slide) => (
             <button
-              key={s.id}
+              key={slide.id}
               type="button"
-              onClick={() => goTo(i)}
-              className={cn(
-                "rounded-full transition-all duration-300",
-                i === activeIndex ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/50",
-              )}
-              aria-label={`Slide ${i + 1}`}
-            />
+              className="relative flex items-center text-left"
+              style={{
+                background: slide.bgGradient,
+                width: `${100 / BANNER_SLIDES.length}%`,
+                minHeight: "200px",
+              }}
+              onClick={() => navigate({ to: "/catalog" })}
+              aria-label={slide.title}
+            >
+              {/* Background image */}
+              <div className="absolute right-0 top-0 bottom-0 w-1/2 sm:w-2/5 pointer-events-none">
+                <img
+                  src={slide.image}
+                  alt=""
+                  aria-hidden="true"
+                  className="w-full h-full object-cover opacity-40 sm:opacity-60"
+                  loading="eager"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+              </div>
+
+              {/* Content */}
+              <div className="relative z-10 px-4 sm:px-8 py-6 max-w-[62%] sm:max-w-[55%]">
+                <div className="flex items-center flex-wrap gap-2 mb-3">
+                  <span className="text-white/90 text-[10px] font-semibold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/20">
+                    {slide.badge}
+                  </span>
+                  <span className="inline-flex items-center gap-1 bg-secondary text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                    <Zap className="h-3 w-3" />
+                    {slide.discount}
+                  </span>
+                </div>
+                <h2 className="font-display font-bold text-white text-lg sm:text-2xl leading-tight mb-2">
+                  {slide.title}
+                </h2>
+                <p className="text-white/80 text-xs sm:text-sm font-body mb-4">
+                  {slide.subtitle}
+                </p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ to: "/catalog" });
+                  }}
+                  className="inline-flex items-center gap-1.5 bg-white text-primary font-semibold text-xs sm:text-sm px-4 py-2 rounded-full hover:bg-white/95 active:scale-95 transition-all shadow-sm"
+                >
+                  {slide.cta}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </button>
           ))}
         </div>
+      </div>
+
+      {/* Dot indicators — overlaid at bottom */}
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
+        {BANNER_SLIDES.map((s, i) => (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => goTo(i)}
+            className={cn(
+              "rounded-full transition-all duration-300",
+              i === activeIndex ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/50",
+            )}
+            aria-label={`Slide ${i + 1}`}
+          />
+        ))}
       </div>
     </section>
   );
@@ -581,6 +800,28 @@ export function HomePage() {
   const { language } = useLanguage();
   const CATEGORIES = language === "hi" ? CATEGORIES_HI : CATEGORIES_EN;
 
+  // Infinite scroll state
+  const [visibleCount, setVisibleCount] = useState(8);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => {
+            // Loop infinitely by cycling through products
+            return prev + 6;
+          });
+        }
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
+
   const handleAddToCart = useCallback(
     (productId: string) => {
       const product = MOCK_PRODUCTS.find((p) => p.id === productId);
@@ -618,7 +859,7 @@ export function HomePage() {
 
       {/* Category Row */}
       <section
-        className="bg-white py-4 px-3 border-b border-border"
+        className="bg-background py-4 px-3 border-b border-border"
         aria-label="Product categories"
       >
         <div className="flex items-center gap-4 overflow-x-auto scrollbar-none snap-scroll pb-1">
@@ -647,7 +888,10 @@ export function HomePage() {
       </section>
 
       {/* Trending Section */}
-      <section className="bg-white mt-2 py-4" aria-label="Trending products">
+      <section
+        className="bg-background mt-2 py-4"
+        aria-label="Trending products"
+      >
         <div className="flex items-center justify-between px-3 mb-3">
           <div>
             <h2 className="font-display font-bold text-foreground text-base leading-tight">
@@ -728,7 +972,10 @@ export function HomePage() {
       </section>
 
       {/* Featured Designs — 2-column grid */}
-      <section className="bg-white mt-2 py-4" aria-label="Featured designs">
+      <section
+        className="bg-background mt-2 py-4"
+        aria-label="Featured designs"
+      >
         <div className="flex items-center justify-between px-3 mb-3">
           <div>
             <h2 className="font-display font-bold text-foreground text-base leading-tight">
@@ -749,94 +996,21 @@ export function HomePage() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 px-3">
-          {MOCK_PRODUCTS.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={handleAddToCart}
-              onBuyNow={handleBuyNow}
-            />
-          ))}
+          {Array.from({ length: visibleCount }, (_, i) => {
+            const product = MOCK_PRODUCTS[i % MOCK_PRODUCTS.length];
+            return (
+              <ProductCard
+                key={`${product.id}-${i}`}
+                product={{ ...product, id: `${product.id}-${i}` }}
+                onAddToCart={() => handleAddToCart(product.id)}
+                onBuyNow={() => handleBuyNow(product.id)}
+              />
+            );
+          })}
         </div>
 
-        {/* Load more */}
-        <div className="px-3 mt-4">
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/catalog" })}
-            className="w-full py-3 border border-primary text-primary text-sm font-semibold rounded-xl hover:bg-primary/5 transition-colors flex items-center justify-center gap-1.5"
-          >
-            {language === "hi" ? "और डिज़ाइन्स देखें" : "View More Designs"}{" "}
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </section>
-
-      {/* Why Fit Also */}
-      <section
-        className="bg-white mt-2 py-5 px-3"
-        aria-label="Why choose Fit Also"
-      >
-        <h2 className="font-display font-bold text-foreground text-base mb-4 text-center">
-          {language === "hi" ? "Fit Also क्यों चुनें?" : "Why Choose Fit Also?"}
-        </h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {(language === "hi"
-            ? [
-                { icon: "✂️", title: "कस्टम सिलाई", desc: "आपके नाप से बना" },
-                {
-                  icon: "⭐",
-                  title: "प्रीमियम कपड़े",
-                  desc: "बेस्ट क्वालिटी",
-                },
-                { icon: "🚚", title: "पैन-इंडिया", desc: "घर तक डिलीवरी" },
-                {
-                  icon: "🛡️",
-                  title: "क्वालिटी गारंटी",
-                  desc: "100% संतुष्टि",
-                },
-              ]
-            : [
-                {
-                  icon: "✂️",
-                  title: "Custom Stitching",
-                  desc: "Made to your measurements",
-                },
-                {
-                  icon: "⭐",
-                  title: "Premium Fabrics",
-                  desc: "Best quality",
-                },
-                {
-                  icon: "🚚",
-                  title: "Pan-India",
-                  desc: "Delivery at doorstep",
-                },
-                {
-                  icon: "🛡️",
-                  title: "Quality Guarantee",
-                  desc: "100% satisfaction",
-                },
-              ]
-          ).map((item) => (
-            <div
-              key={item.title}
-              className="flex flex-col items-center text-center p-3 rounded-xl bg-muted/50 gap-2"
-            >
-              <span className="text-2xl" role="img" aria-hidden="true">
-                {item.icon}
-              </span>
-              <div>
-                <p className="text-xs font-display font-semibold text-foreground">
-                  {item.title}
-                </p>
-                <p className="text-[10px] font-body text-muted-foreground mt-0.5">
-                  {item.desc}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Infinite scroll sentinel */}
+        <div ref={sentinelRef} className="h-4 mt-2" aria-hidden="true" />
       </section>
 
       {/* Footer */}

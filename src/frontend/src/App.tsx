@@ -22,6 +22,7 @@ import { CheckoutPage } from "./pages/CheckoutPage";
 import { CustomerDashboard } from "./pages/CustomerDashboard";
 import { HomePage } from "./pages/HomePage";
 import { ListingDetailPage } from "./pages/ListingDetailPage";
+import { NotificationSettingsPage } from "./pages/NotificationSettingsPage";
 import { OrderConfirmationPage } from "./pages/OrderConfirmationPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { OrderHistoryPage } from "./pages/OrderHistoryPage";
@@ -58,7 +59,7 @@ function RootLayout() {
       <DesktopFooter />
       <BottomNav />
       {!isInitializing && <RoleSelectionModal open={showProfileSetup} />}
-      <Toaster />
+      <Toaster position="top-center" duration={2000} richColors />
     </div>
   );
 }
@@ -163,6 +164,11 @@ const settingsRoute = createRoute({
   path: "/settings",
   component: SettingsPage,
 });
+const notificationSettingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/settings/notifications",
+  component: NotificationSettingsPage,
+});
 const wishlistRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/wishlist",
@@ -191,6 +197,7 @@ const routeTree = rootRoute.addChildren([
   adminRoute,
   accessDeniedRoute,
   settingsRoute,
+  notificationSettingsRoute,
   wishlistRoute,
 ]);
 

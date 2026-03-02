@@ -174,12 +174,14 @@ export function OrderDetailPage() {
               <p className="text-muted-foreground">Total Price</p>
               <p className="font-bold text-primary font-serif text-lg">
                 ₹
-                {(
-                  extOrder?.totalPrice ??
-                  localOrder?.price ??
-                  0
-                ).toLocaleString()}
+                {Number(
+                  extOrder?.totalPrice ?? localOrder?.price ?? 0,
+                ).toLocaleString("hi-IN")}
               </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">GST</p>
+              <p className="font-medium text-green-600">FREE / ₹0</p>
             </div>
             <div>
               <p className="text-muted-foreground">Payment</p>

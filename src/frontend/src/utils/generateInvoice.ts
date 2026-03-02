@@ -290,7 +290,7 @@ export function generateInvoice(order: ExtendedOrder): void {
           <td><strong>${order.listingTitle || "Custom Garment"}</strong></td>
           <td>${order.category || "—"}</td>
           <td>Custom Tailoring (COD)</td>
-          <td><strong>₹${order.totalPrice.toLocaleString("en-IN")}</strong></td>
+          <td><strong>₹${(order.totalPrice ?? 0).toLocaleString("en-IN")}</strong></td>
         </tr>
         ${customizationRows ? `<tr><td colspan="4"><details><summary style="cursor:pointer;color:#6b7280;font-size:11px;">Customization Details</summary><table style="width:100%;margin-top:6px;">${customizationRows}</table></details></td></tr>` : ""}
       </tbody>
@@ -301,19 +301,19 @@ export function generateInvoice(order: ExtendedOrder): void {
       <div class="total-box">
         <div class="total-row">
           <span>Subtotal</span>
-          <span>₹${order.totalPrice.toLocaleString("en-IN")}</span>
+          <span>₹${(order.totalPrice ?? 0).toLocaleString("en-IN")}</span>
         </div>
         <div class="total-row">
           <span>Delivery</span>
-          <span style="color:#16a34a">FREE</span>
+          <span style="color:#16a34a;font-weight:600;">FREE</span>
         </div>
         <div class="total-row">
-          <span>Tax (GST)</span>
-          <span>—</span>
+          <span>GST</span>
+          <span style="color:#16a34a;font-weight:600;">FREE</span>
         </div>
         <div class="total-row grand">
-          <span style="font-weight:700;">Total</span>
-          <span>₹${order.totalPrice.toLocaleString("en-IN")}</span>
+          <span style="font-weight:700;">Total Amount</span>
+          <span>₹${(order.totalPrice ?? 0).toLocaleString("en-IN")}</span>
         </div>
       </div>
     </div>

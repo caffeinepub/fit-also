@@ -9,6 +9,7 @@ import {
   CreditCard,
   MapPin,
   Phone,
+  Ruler,
   ShoppingBag,
   Truck,
 } from "lucide-react";
@@ -44,6 +45,7 @@ interface AddressForm {
   phone: string;
   altPhone: string;
   name: string;
+  landmark: string;
 }
 
 const EMPTY_ADDRESS: AddressForm = {
@@ -55,6 +57,7 @@ const EMPTY_ADDRESS: AddressForm = {
   phone: "",
   altPhone: "",
   name: "",
+  landmark: "",
 };
 
 const INDIA_STATES = [
@@ -152,6 +155,11 @@ export function CheckoutPage() {
   const [address, setAddress] = useState<AddressForm>(EMPTY_ADDRESS);
   const [loading, setLoading] = useState(false);
   const [buyNowItem, setBuyNowItem] = useState<BuyNowItem | null>(null);
+  const [selectedMeasurementId, setSelectedMeasurementId] =
+    useState<string>("");
+  const [savedMeasurements, setSavedMeasurements] = useState<
+    Array<{ id: string; name: string; measurements: Record<string, string> }>
+  >([]);
 
   // Check for buyNow mode
   useEffect(() => {
@@ -160,6 +168,20 @@ export function CheckoutPage() {
       if (raw) {
         const parsed = JSON.parse(raw) as BuyNowItem;
         setBuyNowItem(parsed);
+      }
+    } catch {}
+  }, []);
+
+  // Load saved measurement profiles from localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("measurementProfiles");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setSavedMeasurements(parsed);
+          if (parsed.length > 0) setSelectedMeasurementId(parsed[0].id);
+        }
       }
     } catch {}
   }, []);
@@ -222,6 +244,15 @@ export function CheckoutPage() {
       toast.error("कोई आइटम नहीं है");
       return false;
     }
+    // Block order if measurements are saved but none selected
+    if (savedMeasurements.length > 0 && !selectedMeasurementId) {
+      toast.error(
+        language === "hi"
+          ? "कृपया माप प्रोफ़ाइल चुनें — ऑर्डर के लिए माप आवश्यक है"
+          : "Please select a measurement profile — measurement is required",
+      );
+      return false;
+    }
     return true;
   };
 
@@ -237,7 +268,12 @@ export function CheckoutPage() {
         id: orderId,
         customerName: address.name,
         status: "Order Placed",
-        measurementsJson: "{}",
+        measurementsJson: selectedMeasurementId
+          ? JSON.stringify(
+              savedMeasurements.find((m) => m.id === selectedMeasurementId)
+                ?.measurements ?? {},
+            )
+          : "{}",
         deliveryAddress: {
           houseNo: address.houseNo,
           area: address.area,
@@ -331,7 +367,7 @@ export function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-48">
       {/* Header */}
       <div className="sticky top-0 z-40 bg-primary text-white px-4 py-3 flex items-center gap-3 shadow-md">
         <button
@@ -499,6 +535,24 @@ export function CheckoutPage() {
                 </select>
               </div>
             </FormRow>
+            {/* Landmark / Nearby Place */}
+            <FormRow cols={1}>
+              <FormField
+                label={
+                  language === "hi"
+                    ? "लैंडमार्क / नज़दीकी जगह"
+                    : "Landmark / Nearby Place"
+                }
+              >
+                <Input
+                  value={address.landmark}
+                  onChange={setField("landmark")}
+                  placeholder="Near Metro Station, Mall..."
+                  className="text-sm"
+                  autoComplete="off"
+                />
+              </FormField>
+            </FormRow>
           </div>
         </SectionCard>
 
@@ -536,6 +590,49 @@ export function CheckoutPage() {
               />
             </FormField>
           </FormRow>
+        </SectionCard>
+
+        {/* Measurement Profile Selection */}
+        <SectionCard
+          title={
+            language === "hi" ? "माप प्रोफ़ाइल चुनें" : "Select Measurement Profile"
+          }
+          icon={Ruler}
+        >
+          {savedMeasurements.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {language === "hi"
+                ? "कोई सहेजा हुआ माप नहीं है — Settings में जाकर माप जोड़ें।"
+                : "No saved measurements — add them in Settings."}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {savedMeasurements.map((profile) => (
+                <label
+                  key={profile.id}
+                  className="flex items-center gap-3 p-3 rounded-xl border border-border cursor-pointer hover:bg-muted/50 transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name="measurementProfile"
+                    value={profile.id}
+                    checked={selectedMeasurementId === profile.id}
+                    onChange={() => setSelectedMeasurementId(profile.id)}
+                    className="w-4 h-4 accent-primary"
+                  />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {profile.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {Object.keys(profile.measurements || {}).length}{" "}
+                      {language === "hi" ? "माप" : "measurements"}
+                    </p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          )}
         </SectionCard>
 
         {/* Payment Options */}
@@ -610,8 +707,11 @@ export function CheckoutPage() {
         </SectionCard>
       </div>
 
-      {/* Sticky Place Order Button */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+      {/* Sticky Place Order Button — sits ABOVE bottom nav, well above it */}
+      <div
+        className="fixed left-0 right-0 z-[55] bg-background/95 backdrop-blur-sm border-t border-border shadow-xl px-4 py-3"
+        style={{ bottom: "calc(60px + env(safe-area-inset-bottom, 0px))" }}
+      >
         <div className="max-w-lg mx-auto flex items-center gap-4">
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">

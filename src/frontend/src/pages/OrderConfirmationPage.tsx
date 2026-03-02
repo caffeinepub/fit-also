@@ -28,23 +28,44 @@ export function OrderConfirmationPage() {
     };
   }, []);
 
-  // Fetch order details
+  // Fetch order details — try backend first, then localStorage fallback
   useEffect(() => {
-    if (!actor || !orderId) return;
-    actor
-      .getOrderById(orderId)
-      .then((result) => {
-        if (result) setOrder(result);
-      })
-      .catch(() => {});
+    if (!orderId) return;
+
+    // First try localStorage fallback for immediate display
+    try {
+      const allOrders = JSON.parse(
+        localStorage.getItem("allOrders") ?? "[]",
+      ) as ExtendedOrder[];
+      const localOrder = allOrders.find((o) => o.id === orderId);
+      if (localOrder) setOrder(localOrder);
+    } catch {}
+
+    // Then try backend
+    if (actor) {
+      actor
+        .getOrderById(orderId)
+        .then((result) => {
+          if (result) setOrder(result);
+        })
+        .catch(() => {});
+    }
   }, [actor, orderId]);
 
   const handleDownloadInvoice = () => {
     if (order) {
       generateInvoice(order);
     } else {
-      // Create a minimal mock order for download
-      const mockOrder: ExtendedOrder = {
+      // Try to find the order in localStorage fallback
+      let savedOrder: ExtendedOrder | null = null;
+      try {
+        const allOrders = JSON.parse(
+          localStorage.getItem("allOrders") ?? "[]",
+        ) as ExtendedOrder[];
+        savedOrder = allOrders.find((o) => o.id === orderId) ?? null;
+      } catch {}
+
+      const fallbackOrder: ExtendedOrder = savedOrder ?? {
         id: orderId,
         customerName: "Customer",
         status: "Order Placed",
@@ -72,7 +93,7 @@ export function OrderConfirmationPage() {
         totalPrice: 0,
         adminNotes: "",
       };
-      generateInvoice(mockOrder);
+      generateInvoice(fallbackOrder);
     }
   };
 
@@ -165,7 +186,7 @@ export function OrderConfirmationPage() {
                       Total
                     </span>
                     <span className="text-base font-display font-bold text-primary">
-                      ₹{order.totalPrice.toLocaleString("hi-IN")}
+                      ₹{Number(order.totalPrice || 0).toLocaleString("hi-IN")}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
