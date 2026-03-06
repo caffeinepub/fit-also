@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useNavigate } from "@tanstack/react-router";
-import { Shield, User } from "lucide-react";
+import { Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useLanguage } from "../hooks/useLanguage";
@@ -36,91 +36,134 @@ export function Header({ className }: HeaderProps) {
         className,
       )}
     >
-      {/* Top bar: Banner background with logo + icons */}
+      {/* Shimmer animations */}
+      <style>{`
+        @keyframes shimmer-sweep {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        .logo-shimmer-overlay {
+          position: absolute;
+          inset: 0;
+          border-radius: 9999px;
+          overflow: hidden;
+          pointer-events: none;
+          z-index: 1;
+        }
+        .logo-shimmer-overlay::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 60%;
+          height: 100%;
+          background: linear-gradient(
+            105deg,
+            transparent 20%,
+            rgba(255,255,255,0.65) 50%,
+            transparent 80%
+          );
+          animation: shimmer-sweep 2.2s ease-in-out infinite;
+        }
+        .banner-shimmer-wrap {
+          position: relative;
+          overflow: hidden;
+        }
+        .banner-shimmer-wrap::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            105deg,
+            transparent 25%,
+            rgba(255,255,255,0.18) 45%,
+            rgba(255,255,255,0.35) 50%,
+            rgba(255,255,255,0.18) 55%,
+            transparent 75%
+          );
+          animation: shimmer-sweep 2.8s ease-in-out infinite;
+          pointer-events: none;
+          z-index: 2;
+        }
+        @keyframes text-shimmer {
+          0% { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+        .fit-also-text {
+          background: linear-gradient(
+            90deg,
+            #a0a0a0 0%,
+            #e8e8e8 20%,
+            #ffffff 40%,
+            #c8c8c8 60%,
+            #ffffff 75%,
+            #a0a0a0 100%
+          );
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: text-shimmer 2.8s linear infinite;
+          filter: drop-shadow(0 0 3px rgba(255,255,255,0.5));
+        }
+      `}</style>
+
+      {/* Top bar: Full reference image as header */}
       <div
-        className="px-3 py-2 relative"
-        style={{
-          backgroundImage:
-            "url('/assets/uploads/IMG_20260228_083225_533-1-2.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
+        className="relative overflow-hidden banner-shimmer-wrap"
+        style={{ minHeight: "80px" }}
       >
-        {/* Subtle dark overlay — keep banner visible */}
-        <div className="absolute inset-0 bg-black/40" />
+        {/* Full reference image as-is */}
+        <button
+          type="button"
+          data-ocid="header.home.button"
+          onClick={() => navigate({ to: "/" })}
+          className="block w-full focus:outline-none"
+          aria-label="Fit Also Home"
+          style={{
+            display: "block",
+            padding: 0,
+            border: "none",
+            background: "none",
+            cursor: "pointer",
+          }}
+        >
+          <img
+            src="/assets/uploads/InShot_20260302_214920408-2-1.jpg"
+            alt="Fit Also — Modern Tailoring | Global Retail"
+            className="w-full"
+            style={{
+              display: "block",
+              width: "100%",
+              height: "auto",
+              maxHeight: "120px",
+              objectFit: "cover",
+              objectPosition: "center",
+            }}
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </button>
 
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between relative z-10">
-          {/* Left: Logo + Brand name stacked below logo */}
-          <button
-            type="button"
-            data-ocid="header.home.button"
-            onClick={() => navigate({ to: "/" })}
-            className="shrink-0 flex flex-col items-center leading-none gap-0.5 ml-0"
-            aria-label="Fit Also Home"
-          >
-            {/* Round logo — pure original color, no white overlay/filter/blendMode */}
-            <div className="h-12 w-12 rounded-full overflow-hidden shrink-0">
-              <img
-                src="/assets/uploads/1772254655818-1.png"
-                alt="Fit Also Logo"
-                className="h-full w-full object-cover"
-                style={{
-                  boxShadow: "none",
-                  border: "none",
-                  outline: "none",
-                  background: "transparent",
-                }}
-              />
+        {/* Login / Admin overlay — top right corner */}
+        <div className="absolute top-2 right-2 z-20 flex items-center gap-1">
+          {!isAuthenticated && (
+            <div className="flex items-center">
+              <LoginButton />
             </div>
-            {/* Silver crystal "FIT ALSO" text below logo */}
-            <span
-              className="text-[11px] font-extrabold tracking-[0.18em] uppercase leading-none"
-              style={{
-                background:
-                  "linear-gradient(135deg, #e8e8e8 0%, #c0c0c0 25%, #ffffff 50%, #a8a8a8 75%, #d4d4d4 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-                filter: "drop-shadow(0 0 4px rgba(255,255,255,0.6))",
-                textShadow: "none",
-              }}
+          )}
+          {isAdmin && (
+            <button
+              type="button"
+              data-ocid="header.admin.button"
+              onClick={() => navigate({ to: "/admin" })}
+              className="flex items-center justify-center w-8 h-8 text-white hover:bg-white/20 rounded-full transition-colors bg-black/40 backdrop-blur-sm"
+              aria-label="Admin Panel"
             >
-              FIT ALSO
-            </span>
-          </button>
-
-          {/* Right: Profile icon ONLY (Search + Cart moved to BottomNav) */}
-          <div className="flex items-end pb-2 gap-1 shrink-0">
-            {/* Profile icon (small) — navigates to settings/dashboard */}
-            {isAuthenticated ? (
-              <button
-                type="button"
-                data-ocid="header.profile.button"
-                onClick={() => navigate({ to: "/settings" })}
-                className="flex items-center justify-center w-9 h-9 text-white hover:bg-white/15 rounded-full transition-colors"
-                aria-label={language === "hi" ? "प्रोफ़ाइल" : "Profile"}
-              >
-                <User className="h-5 w-5" />
-              </button>
-            ) : (
-              <div className="flex items-center px-1">
-                <LoginButton />
-              </div>
-            )}
-
-            {/* Admin shield — only for admins */}
-            {isAdmin && (
-              <button
-                type="button"
-                data-ocid="header.admin.button"
-                onClick={() => navigate({ to: "/admin" })}
-                className="flex items-center justify-center w-9 h-9 text-white hover:bg-white/15 rounded-full transition-colors"
-                aria-label="Admin Panel"
-              >
-                <Shield className="h-5 w-5" />
-              </button>
-            )}
-          </div>
+              <Shield className="h-4 w-4" />
+            </button>
+          )}
         </div>
       </div>
 

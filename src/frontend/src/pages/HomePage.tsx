@@ -34,252 +34,504 @@ interface MockProduct {
   reviews: number;
   image: string;
   category: GarmentCategory;
+  isHoli?: boolean;
 }
 
 const MOCK_PRODUCTS: MockProduct[] = [
   {
     id: "1",
-    name: "Anarkali",
-    nameHi: "अनारकली",
-    price: 2499,
-    originalPrice: 3200,
+    name: "Holi Special Kurta",
+    nameHi: "होली स्पेशल कुर्ता",
+    price: 1299,
+    originalPrice: 1800,
     rating: 4.8,
     reviews: 234,
-    image:
-      "https://images.unsplash.com/photo-1583391733956-6c78276477e2?w=300&h=400&fit=crop",
-    category: "Anarkalis",
+    image: "/assets/uploads/product-jpeg-500x500-1.jpg",
+    category: "Kurtas",
+    isHoli: true,
   },
   {
     id: "2",
-    name: "Saree Blouse",
-    nameHi: "साड़ी ब्लाउज",
-    price: 1800,
-    originalPrice: 2400,
+    name: "White Floral Anarkali Gown",
+    nameHi: "सफेद फ्लोरल अनारकली गाउन",
+    price: 3200,
+    originalPrice: 4200,
     rating: 4.8,
     reviews: 187,
-    image:
-      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=300&h=400&fit=crop",
-    category: "Saree Blouses",
+    image: "/assets/uploads/DSC3612_480x480-2.jpg",
+    category: "Anarkalis",
   },
   {
     id: "3",
-    name: "Mens Suit",
-    nameHi: "मेन्स सूट",
-    price: 4500,
-    originalPrice: 6000,
-    rating: 4.9,
+    name: "Tulip Print Kurti Set",
+    nameHi: "ट्यूलिप प्रिंट कुर्ती सेट",
+    price: 1699,
+    originalPrice: 2200,
+    rating: 4.7,
     reviews: 312,
-    image:
-      "https://images.unsplash.com/photo-1550246140-5119ae4790b8?w=300&h=400&fit=crop",
-    category: "Suits",
+    image: "/assets/uploads/BHKS411_5_480x480-3.jpg",
+    category: "Kurtas",
   },
   {
     id: "4",
-    name: "Bridal Lehenga",
-    nameHi: "ब्राइडल लहंगा",
-    price: 3200,
-    originalPrice: 4200,
-    rating: 4.7,
+    name: "Yellow Embroidered Suit",
+    nameHi: "पीली कढ़ाई वाली सूट",
+    price: 2899,
+    originalPrice: 3800,
+    rating: 4.9,
     reviews: 156,
-    image:
-      "https://images.unsplash.com/photo-1609051876096-b44a3a3a6a1b?w=300&h=400&fit=crop",
-    category: "Lehengas",
+    image: "/assets/uploads/04-11-22-255_1-e1677751648409-1--4.png",
+    category: "Suits",
   },
   {
     id: "5",
-    name: "Festive Kurta",
-    nameHi: "फेस्टिव कुर्ता",
-    price: 1299,
-    originalPrice: 1800,
-    rating: 4.5,
+    name: "Cream Embroidered Salwar Set",
+    nameHi: "क्रीम कढ़ाई सलवार सेट",
+    price: 2499,
+    originalPrice: 3200,
+    rating: 4.6,
     reviews: 89,
-    image:
-      "https://images.unsplash.com/photo-1585487000160-6ebcfceb0d03?w=300&h=400&fit=crop",
-    category: "Kurtas",
+    image: "/assets/uploads/Thumb-33-5.png",
+    category: "Suits",
   },
   {
     id: "6",
-    name: "Designer Sherwani",
-    nameHi: "डिज़ाइनर शेरवानी",
-    price: 2100,
-    originalPrice: 2800,
+    name: "Magenta Blazer Pant Set",
+    nameHi: "मैजेंटा ब्लेज़र पैंट सेट",
+    price: 3800,
+    originalPrice: 5000,
     rating: 4.8,
     reviews: 203,
-    image:
-      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=300&h=400&fit=crop",
-    category: "Sherwanis",
+    image: "/assets/uploads/IMG-20240831-WA0271-6.jpg",
+    category: "Suits",
   },
   {
     id: "7",
-    name: "Embroidered Kurti",
-    nameHi: "कढ़ाई कुर्ती",
-    price: 1599,
-    originalPrice: 2200,
-    rating: 4.6,
+    name: "White Kurta with Rainbow Dupatta",
+    nameHi: "सफेद कुर्ता रेनबो दुपट्टे के साथ",
+    price: 1899,
+    originalPrice: 2500,
+    rating: 4.7,
     reviews: 142,
-    image:
-      "https://images.unsplash.com/photo-1594938298603-c8148c4b4357?w=300&h=400&fit=crop",
+    image: "/assets/uploads/7373499a44f590596c58bde0def45fee-7.jpg",
     category: "Kurtas",
+    isHoli: true,
   },
   {
     id: "8",
-    name: "Silk Palazzo Set",
-    nameHi: "सिल्क पलाज़ो सेट",
+    name: "Yellow Chikankari Suit",
+    nameHi: "पीली चिकनकारी सूट",
     price: 2800,
     originalPrice: 3600,
     rating: 4.7,
     reviews: 98,
-    image:
-      "https://images.unsplash.com/photo-1614251055880-ee96e4803393?w=300&h=400&fit=crop",
+    image: "/assets/uploads/04-11-22-255_1-e1677751648409-8.png",
     category: "Suits",
   },
   {
     id: "9",
-    name: "Heavy Lehenga Choli",
-    nameHi: "हेवी लहंगा चोली",
-    price: 5500,
-    originalPrice: 7000,
-    rating: 4.9,
+    name: "Holi White Outfit",
+    nameHi: "होली व्हाइट आउटफिट",
+    price: 1599,
+    originalPrice: 2100,
+    rating: 4.8,
     reviews: 267,
     image:
-      "https://images.unsplash.com/photo-1596900779744-2489d0eedf30?w=300&h=400&fit=crop",
-    category: "Lehengas",
+      "/assets/uploads/white-holi-outfit-ideas-bewakoof-blog-6-1616348772-9.jpg",
+    category: "Kurtas",
+    isHoli: true,
   },
   {
     id: "10",
-    name: "Cotton Salwar Suit",
-    nameHi: "कॉटन सलवार सूट",
-    price: 1100,
-    originalPrice: 1500,
-    rating: 4.4,
+    name: "Beige Floral Straight Kurta",
+    nameHi: "बेज फ्लोरल स्ट्रेट कुर्ता",
+    price: 2200,
+    originalPrice: 2900,
+    rating: 4.5,
     reviews: 73,
-    image:
-      "https://images.unsplash.com/photo-1588701023429-9e8b657cf7c8?w=300&h=400&fit=crop",
-    category: "Suits",
+    image: "/assets/uploads/1_279_483-10.jpg",
+    category: "Kurtas",
   },
   {
     id: "11",
-    name: "Banarasi Blouse",
-    nameHi: "बनारसी ब्लाउज",
-    price: 2200,
-    originalPrice: 2900,
+    name: "Floral Anarkali Set",
+    nameHi: "फ्लोरल अनारकली सेट",
+    price: 2499,
+    originalPrice: 3200,
     rating: 4.8,
     reviews: 189,
-    image:
-      "https://images.unsplash.com/photo-1593173886081-ecab7d0cf6a5?w=300&h=400&fit=crop",
-    category: "Saree Blouses",
+    image: "/assets/uploads/IMG-20240831-WA0271-1-11.jpg",
+    category: "Anarkalis",
   },
   {
     id: "12",
-    name: "Jodhpuri Bandhgala",
-    nameHi: "जोधपुरी बंधगला",
-    price: 3800,
-    originalPrice: 5000,
-    rating: 4.9,
+    name: "Designer Formal Shirt",
+    nameHi: "डिज़ाइनर फॉर्मल शर्ट",
+    price: 1800,
+    originalPrice: 2400,
+    rating: 4.7,
     reviews: 134,
-    image:
-      "https://images.unsplash.com/photo-1570976447640-ac859083963f?w=300&h=400&fit=crop",
-    category: "Sherwanis",
+    image: "/assets/uploads/w66_2048x-12.jpg",
+    category: "Suits",
   },
   {
     id: "13",
-    name: "Flared Anarkali Gown",
-    nameHi: "फ्लेयर्ड अनारकली गाउन",
-    price: 3100,
-    originalPrice: 4000,
-    rating: 4.7,
+    name: "White Floral Anarkali",
+    nameHi: "व्हाइट फ्लोरल अनारकली",
+    price: 2999,
+    originalPrice: 3900,
+    rating: 4.9,
     reviews: 211,
-    image:
-      "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?w=300&h=400&fit=crop",
+    image: "/assets/uploads/thumb1-2-1--13.png",
     category: "Anarkalis",
   },
   {
     id: "14",
-    name: "Pathani Kurta Set",
-    nameHi: "पठानी कुर्ता सेट",
-    price: 1750,
-    originalPrice: 2300,
-    rating: 4.5,
+    name: "Floral Straight Suit",
+    nameHi: "फ्लोरल स्ट्रेट सूट",
+    price: 2100,
+    originalPrice: 2800,
+    rating: 4.6,
     reviews: 65,
-    image:
-      "https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=300&h=400&fit=crop",
-    category: "Kurtas",
+    image: "/assets/uploads/pht0080.1-e1676355837849-14.png",
+    category: "Suits",
   },
   {
     id: "15",
-    name: "Party Wear Saree Blouse",
-    nameHi: "पार्टी वेयर साड़ी ब्लाउज",
-    price: 1950,
-    originalPrice: 2600,
-    rating: 4.6,
+    name: "White Anarkali with Dupatta",
+    nameHi: "सफेद अनारकली दुपट्टे के साथ",
+    price: 2400,
+    originalPrice: 3200,
+    rating: 4.7,
     reviews: 108,
-    image:
-      "https://images.unsplash.com/photo-1617727553252-65863c156eb9?w=300&h=400&fit=crop",
-    category: "Saree Blouses",
+    image: "/assets/uploads/thumb1-2-16.png",
+    category: "Anarkalis",
   },
   {
     id: "16",
-    name: "Wedding Sherwani",
-    nameHi: "वेडिंग शेरवानी",
-    price: 6500,
-    originalPrice: 8500,
-    rating: 5.0,
+    name: "Floral Embroidered Anarkali",
+    nameHi: "फ्लोरल कढ़ाई अनारकली",
+    price: 3100,
+    originalPrice: 4100,
+    rating: 4.9,
     reviews: 322,
-    image:
-      "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=300&h=400&fit=crop",
-    category: "Sherwanis",
+    image: "/assets/uploads/60-18.png",
+    category: "Anarkalis",
   },
   {
     id: "17",
-    name: "Chikankari Kurti",
-    nameHi: "चिकनकारी कुर्ती",
-    price: 1450,
-    originalPrice: 1900,
-    rating: 4.6,
-    reviews: 154,
-    image:
-      "https://images.unsplash.com/photo-1583482183021-bd3f0977b5e5?w=300&h=400&fit=crop",
-    category: "Kurtas",
-  },
-  {
-    id: "18",
-    name: "Velvet Lehenga",
-    nameHi: "वेलवेट लहंगा",
+    name: "Designer Mens Sherwani",
+    nameHi: "डिज़ाइनर मेन्स शेरवानी",
     price: 4200,
     originalPrice: 5500,
     rating: 4.8,
-    reviews: 176,
+    reviews: 154,
     image:
-      "https://images.unsplash.com/photo-1519735777090-ec97162dc266?w=300&h=400&fit=crop",
-    category: "Lehengas",
+      "/assets/uploads/Summer-African-Men-s-Traditional-Elegant-Suits-Outfit-Dashiki-2pcs-Shirt-Pants-Full-Set-Designer-Clothes-3-off-17.jpg",
+    category: "Sherwanis",
+  },
+  {
+    id: "18",
+    name: "Magenta Party Blazer",
+    nameHi: "मैजेंटा पार्टी ब्लेज़र",
+    price: 3600,
+    originalPrice: 4800,
+    rating: 4.7,
+    reviews: 176,
+    image: "/assets/uploads/7373499a44f590596c58bde0def45fee-7.jpg",
+    category: "Suits",
   },
   {
     id: "19",
-    name: "Linen Blazer Suit",
-    nameHi: "लिनन ब्लेज़र सूट",
-    price: 3400,
-    originalPrice: 4500,
-    rating: 4.7,
+    name: "Satin Embellished Shirt",
+    nameHi: "साटिन एम्बेलिश्ड शर्ट",
+    price: 2800,
+    originalPrice: 3700,
+    rating: 4.6,
     reviews: 91,
-    image:
-      "https://images.unsplash.com/photo-1544441893-675973e31985?w=300&h=400&fit=crop",
+    image: "/assets/uploads/IMG-20240831-WA0271-6.jpg",
     category: "Suits",
   },
   {
     id: "20",
-    name: "Mirror Work Anarkali",
-    nameHi: "मिरर वर्क अनारकली",
-    price: 2750,
-    originalPrice: 3500,
+    name: "Holi Kurta Pyjama",
+    nameHi: "होली कुर्ता पायजामा",
+    price: 1750,
+    originalPrice: 2300,
     rating: 4.8,
     reviews: 243,
-    image:
-      "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=300&h=400&fit=crop",
-    category: "Anarkalis",
+    image: "/assets/uploads/product-jpeg-500x500-1.jpg",
+    category: "Kurtas",
+    isHoli: true,
+  },
+  {
+    id: "21",
+    name: "Black 3-Piece Men's Suit",
+    nameHi: "ब्लैक 3-पीस मेन्स सूट",
+    price: 6500,
+    originalPrice: 8500,
+    rating: 4.9,
+    reviews: 312,
+    image: "/assets/uploads/64ba00a676ac56d55c9eb0e00753d34d-1.jpg",
+    category: "Suits",
+  },
+  {
+    id: "22",
+    name: "Brown Casual Shirt + White Pant Combo",
+    nameHi: "ब्राउन कैजुअल शर्ट + व्हाइट पैंट कॉम्बो",
+    price: 2200,
+    originalPrice: 2900,
+    rating: 4.7,
+    reviews: 198,
+    image: "/assets/uploads/b1a61a0c6ba53cf3b7bdbfff49f9a366-2.jpg",
+    category: "Shirts",
+  },
+  {
+    id: "23",
+    name: "Grey Striped Mandarin Kurta Set",
+    nameHi: "ग्रे स्ट्राइप्ड मंदारिन कुर्ता सेट",
+    price: 2400,
+    originalPrice: 3100,
+    rating: 4.7,
+    reviews: 143,
+    image: "/assets/uploads/94ebd87a4d9ea257781f1b60ec0480cc-3.jpg",
+    category: "Kurtas",
+  },
+  {
+    id: "24",
+    name: "Yellow Indo-Western Sherwani",
+    nameHi: "येलो इंडो-वेस्टर्न शेरवानी",
+    price: 7800,
+    originalPrice: 10000,
+    rating: 4.9,
+    reviews: 267,
+    image: "/assets/uploads/e117de0a390bbfa6d30a1b3f105954e9-4.jpg",
+    category: "Sherwanis",
+  },
+  {
+    id: "25",
+    name: "Pink Ombre Crop Top + Palazzo Set",
+    nameHi: "पिंक ओम्ब्रे क्रॉप टॉप + पलाज़ो सेट",
+    price: 3200,
+    originalPrice: 4200,
+    rating: 4.8,
+    reviews: 189,
+    image: "/assets/uploads/c9ff3c69bdbd9915f730b97843ca99f3-5.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "26",
+    name: "Sage Green Jacket + White Tee Outfit",
+    nameHi: "सेज ग्रीन जैकेट + व्हाइट टी आउटफिट",
+    price: 2800,
+    originalPrice: 3600,
+    rating: 4.6,
+    reviews: 112,
+    image: "/assets/uploads/7d92562c11c102068baf82a60bc892e8-6.jpg",
+    category: "Suits",
+  },
+  {
+    id: "27",
+    name: "Holi Color Splash Kaftan Top",
+    nameHi: "होली कलर स्प्लैश काफ्तान टॉप",
+    price: 1800,
+    originalPrice: 2400,
+    rating: 4.8,
+    reviews: 231,
+    image: "/assets/uploads/763b50815ee566fd6bfed3a6db4a4a92-7.jpg",
+    category: "Kurtas",
+    isHoli: true,
+  },
+  {
+    id: "28",
+    name: "Blue Floral Embroidered Blazer Set",
+    nameHi: "ब्लू फ्लोरल एम्ब्रॉयडर्ड ब्लेज़र सेट",
+    price: 5200,
+    originalPrice: 6800,
+    rating: 4.8,
+    reviews: 174,
+    image: "/assets/uploads/5638a25b21c90f9d84ee7d15db1c432b-8.jpg",
+    category: "Suits",
+  },
+  {
+    id: "29",
+    name: "Yellow Studded Denim Jacket",
+    nameHi: "येलो स्टडेड डेनिम जैकेट",
+    price: 1900,
+    originalPrice: 2500,
+    rating: 4.6,
+    reviews: 98,
+    image: "/assets/uploads/07ad2bbe06e2c5c14514e9c731a0f5c9-9.jpg",
+    category: "Shirts",
+  },
+  {
+    id: "30",
+    name: "Silver Grey Sharara Set",
+    nameHi: "सिल्वर ग्रे शरारा सेट",
+    price: 4500,
+    originalPrice: 5800,
+    rating: 4.9,
+    reviews: 256,
+    image: "/assets/uploads/ac77432e9e6c46cd187682481a144dc8-10.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "31",
+    name: "Pink Floral Halter Layered Palazzo",
+    nameHi: "पिंक फ्लोरल हल्टर लेयर्ड पलाज़ो",
+    price: 3800,
+    originalPrice: 4900,
+    rating: 4.8,
+    reviews: 167,
+    image: "/assets/uploads/9403db08bab44aa249b44bdb47866d70-11.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "32",
+    name: "Navy Blue Printed Co-ord Set",
+    nameHi: "नेवी ब्लू प्रिंटेड को-ऑर्ड सेट",
+    price: 2900,
+    originalPrice: 3800,
+    rating: 4.7,
+    reviews: 203,
+    image: "/assets/uploads/16081b46bdd43d74dd6f6ca4b26afc96-12.jpg",
+    category: "Suits",
+  },
+  {
+    id: "33",
+    name: "Yellow Embroidered Peplum + Palazzo",
+    nameHi: "येलो एम्ब्रॉयडर्ड पेप्लम + पलाज़ो",
+    price: 4200,
+    originalPrice: 5500,
+    rating: 4.9,
+    reviews: 289,
+    image: "/assets/uploads/1a8d07aec4c17aaafa7c08ff960176da-13.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "34",
+    name: "Dark Green Embroidered Lehenga",
+    nameHi: "डार्क ग्रीन एम्ब्रॉयडर्ड लहंगा",
+    price: 6800,
+    originalPrice: 8800,
+    rating: 4.9,
+    reviews: 312,
+    image: "/assets/uploads/e808261334479a389e09d4da68d43d3a-14.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "35",
+    name: "Red Gold Brocade Palazzo Suit",
+    nameHi: "रेड गोल्ड ब्रोकेड पलाज़ो सूट",
+    price: 5500,
+    originalPrice: 7200,
+    rating: 4.8,
+    reviews: 198,
+    image: "/assets/uploads/4cc2fafdd5cedb0ea060bbd9d91c67d2-15.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "36",
+    name: "Multi-color Patched Palazzo Set",
+    nameHi: "मल्टी-कलर पैच्ड पलाज़ो सेट",
+    price: 3400,
+    originalPrice: 4500,
+    rating: 4.7,
+    reviews: 143,
+    image: "/assets/uploads/fd2af3d86fba2c2c88436469abe186fa-16.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "37",
+    name: "Rust Orange Draped Saree-Style Set",
+    nameHi: "रस्ट ऑरेंज ड्रेप्ड साड़ी-स्टाइल सेट",
+    price: 4800,
+    originalPrice: 6200,
+    rating: 4.8,
+    reviews: 187,
+    image: "/assets/uploads/d3b7b1859552b88ede66c590078e4f9a-17.jpg",
+    category: "Saree Blouses",
+  },
+  {
+    id: "38",
+    name: "Multi-color Rajasthani Lehenga",
+    nameHi: "मल्टी-कलर राजस्थानी लहंगा",
+    price: 7500,
+    originalPrice: 9800,
+    rating: 4.9,
+    reviews: 423,
+    image: "/assets/uploads/ce34ebc3b215a426ae5172e5529515a4-18.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "39",
+    name: "Multi-color Patchwork Crop + Palazzo",
+    nameHi: "मल्टी-कलर पैचवर्क क्रॉप + पलाज़ो",
+    price: 3200,
+    originalPrice: 4100,
+    rating: 4.7,
+    reviews: 156,
+    image: "/assets/uploads/de7b802e56f7e8df72227edf2df37a68-19.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "40",
+    name: "Green Embroidered Bridal Blouse",
+    nameHi: "ग्रीन एम्ब्रॉयडर्ड ब्राइडल ब्लाउज",
+    price: 2800,
+    originalPrice: 3600,
+    rating: 4.9,
+    reviews: 234,
+    image: "/assets/uploads/d7dbbb6f86417a410eaa5eb16166d09b-20.jpg",
+    category: "Saree Blouses",
+  },
+  {
+    id: "41",
+    name: "Dark Green Floral Lehenga",
+    nameHi: "डार्क ग्रीन फ्लोरल लहंगा",
+    price: 8200,
+    originalPrice: 10500,
+    rating: 4.9,
+    reviews: 367,
+    image: "/assets/uploads/d42922b85ff0bf7cc8c1d415b105f493-21.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "42",
+    name: "Multi-color Striped Lehenga Set",
+    nameHi: "मल्टी-कलर स्ट्राइप्ड लहंगा सेट",
+    price: 4200,
+    originalPrice: 5500,
+    rating: 4.8,
+    reviews: 189,
+    image: "/assets/uploads/245361151e2e85b0dd9a4e9960f6c98b-22.jpg",
+    category: "Lehengas",
+  },
+  {
+    id: "43",
+    name: "Embroidered Patchwork Palazzo Co-ord",
+    nameHi: "एम्ब्रॉयडर्ड पैचवर्क पलाज़ो को-ऑर्ड",
+    price: 3600,
+    originalPrice: 4700,
+    rating: 4.8,
+    reviews: 211,
+    image: "/assets/uploads/21b73b58970133f307d57bc510b15cbc-23.jpg",
+    category: "Lehengas",
   },
 ];
 
 const BANNER_SLIDES_HI = [
+  {
+    id: "b0",
+    bgGradient: "linear-gradient(135deg, #ff6b35, #f7c59f, #ef8c6f, #ff4e8a)",
+    badge: "🎨 होली स्पेशल",
+    title: "होली पर धमाकेदार छूट!",
+    subtitle: "रंगों के त्योहार पर 40% तक की बचत करें",
+    cta: "होली कलेक्शन देखें",
+    image: "/assets/uploads/product-jpeg-500x500-1.jpg",
+    discount: "40% OFF",
+    isHoli: true,
+  },
   {
     id: "b1",
     bgGradient: "linear-gradient(135deg, #1a1a1a, #2d2d2d)",
@@ -287,20 +539,20 @@ const BANNER_SLIDES_HI = [
     title: "विशेष छूट: नई ड्रेस सिलाई!",
     subtitle: "कस्टम सिलाई पर ₹500 की बचत करें",
     cta: "अभी बुक करें",
-    image:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+    image: "/assets/uploads/DSC3612_480x480-2.jpg",
     discount: "25% OFF",
+    isHoli: false,
   },
   {
     id: "b2",
     bgGradient: "linear-gradient(135deg, #2a2a2a, #404040)",
     badge: "✨ नया कलेक्शन",
-    title: "ब्राइडल लहंगा कलेक्शन 2025",
+    title: "अनारकली और सूट कलेक्शन",
     subtitle: "हस्त-निर्मित, प्रीमियम कपड़े",
     cta: "देखें",
-    image:
-      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=300&fit=crop",
+    image: "/assets/uploads/BHKS411_5_480x480-3.jpg",
     discount: "NEW",
+    isHoli: false,
   },
   {
     id: "b3",
@@ -310,12 +562,35 @@ const BANNER_SLIDES_HI = [
     subtitle: "त्योहारों के लिए तैयार — ₹2999 से शुरू",
     cta: "शॉप करें",
     image:
-      "https://images.unsplash.com/photo-1550246140-5119ae4790b8?w=400&h=300&fit=crop",
+      "/assets/uploads/Summer-African-Men-s-Traditional-Elegant-Suits-Outfit-Dashiki-2pcs-Shirt-Pants-Full-Set-Designer-Clothes-3-off-17.jpg",
     discount: "30% OFF",
+    isHoli: false,
+  },
+  {
+    id: "b4",
+    bgGradient: "linear-gradient(135deg, #6b21a8, #9333ea, #c026d3)",
+    badge: "💃 लेडीज़ स्पेशल",
+    title: "लेडीज़ एक्सक्लूसिव कलेक्शन",
+    subtitle: "पार्टी से लेकर वेडिंग तक — सब कुछ एक जगह",
+    cta: "अभी देखें",
+    image: "/assets/uploads/IMG-20240831-WA0271-6.jpg",
+    discount: "35% OFF",
+    isHoli: false,
   },
 ];
 
 const BANNER_SLIDES_EN = [
+  {
+    id: "b0",
+    bgGradient: "linear-gradient(135deg, #ff6b35, #f7c59f, #ef8c6f, #ff4e8a)",
+    badge: "🎨 Holi Special",
+    title: "Holi Mega Sale!",
+    subtitle: "Save up to 40% this Festival of Colors",
+    cta: "Shop Holi Collection",
+    image: "/assets/uploads/product-jpeg-500x500-1.jpg",
+    discount: "40% OFF",
+    isHoli: true,
+  },
   {
     id: "b1",
     bgGradient: "linear-gradient(135deg, #1a1a1a, #2d2d2d)",
@@ -323,20 +598,20 @@ const BANNER_SLIDES_EN = [
     title: "Special Discount: New Dress Stitching!",
     subtitle: "Save ₹500 on custom tailoring",
     cta: "Book Now",
-    image:
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop",
+    image: "/assets/uploads/DSC3612_480x480-2.jpg",
     discount: "25% OFF",
+    isHoli: false,
   },
   {
     id: "b2",
     bgGradient: "linear-gradient(135deg, #2a2a2a, #404040)",
     badge: "✨ New Collection",
-    title: "Bridal Lehenga Collection 2025",
+    title: "Anarkali & Suit Collection",
     subtitle: "Handcrafted, premium fabrics",
     cta: "View",
-    image:
-      "https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=400&h=300&fit=crop",
+    image: "/assets/uploads/BHKS411_5_480x480-3.jpg",
     discount: "NEW",
+    isHoli: false,
   },
   {
     id: "b3",
@@ -346,8 +621,20 @@ const BANNER_SLIDES_EN = [
     subtitle: "Festival-ready — starting ₹2999",
     cta: "Shop Now",
     image:
-      "https://images.unsplash.com/photo-1550246140-5119ae4790b8?w=400&h=300&fit=crop",
+      "/assets/uploads/Summer-African-Men-s-Traditional-Elegant-Suits-Outfit-Dashiki-2pcs-Shirt-Pants-Full-Set-Designer-Clothes-3-off-17.jpg",
     discount: "30% OFF",
+    isHoli: false,
+  },
+  {
+    id: "b4",
+    bgGradient: "linear-gradient(135deg, #6b21a8, #9333ea, #c026d3)",
+    badge: "💃 Ladies Special",
+    title: "Ladies Exclusive Collection",
+    subtitle: "From party wear to bridal — all in one place",
+    cta: "Shop Now",
+    image: "/assets/uploads/IMG-20240831-WA0271-6.jpg",
+    discount: "35% OFF",
+    isHoli: false,
   },
 ];
 
@@ -513,13 +800,20 @@ function ProductCard({
           }
           className="w-full h-full"
         />
-        <span className="absolute top-2 left-2 bg-secondary text-secondary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-sm pointer-events-none z-10">
-          {Math.round(
-            ((product.originalPrice - product.price) / product.originalPrice) *
-              100,
-          )}
-          % OFF
-        </span>
+        {product.isHoli ? (
+          <span className="absolute top-2 left-2 bg-orange-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full pointer-events-none z-10 flex items-center gap-0.5">
+            🎨 {language === "hi" ? "होली" : "HOLI"}
+          </span>
+        ) : (
+          <span className="absolute top-2 left-2 bg-secondary text-secondary-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-sm pointer-events-none z-10">
+            {Math.round(
+              ((product.originalPrice - product.price) /
+                product.originalPrice) *
+                100,
+            )}
+            % OFF
+          </span>
+        )}
         <button
           type="button"
           onClick={(e) => {
@@ -619,15 +913,18 @@ function HeroBanner() {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const BANNER_SLIDES = language === "hi" ? BANNER_SLIDES_HI : BANNER_SLIDES_EN;
+  const total = BANNER_SLIDES.length;
   const touchStartX = useRef<number>(0);
+  const touchStartY = useRef<number>(0);
   const autoSlideRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isDragging = useRef(false);
 
   const startAutoSlide = useCallback(() => {
     if (autoSlideRef.current) clearInterval(autoSlideRef.current);
     autoSlideRef.current = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+      setActiveIndex((prev) => (prev + 1) % total);
     }, 3000);
-  }, [BANNER_SLIDES.length]);
+  }, [total]);
 
   useEffect(() => {
     startAutoSlide();
@@ -638,91 +935,147 @@ function HeroBanner() {
 
   const goTo = useCallback(
     (index: number) => {
-      setActiveIndex(index);
+      setActiveIndex(((index % total) + total) % total);
       startAutoSlide();
     },
-    [startAutoSlide],
+    [startAutoSlide, total],
   );
 
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isDragging.current = false;
     if (autoSlideRef.current) clearInterval(autoSlideRef.current);
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) {
-        setActiveIndex((prev) => (prev + 1) % BANNER_SLIDES.length);
+    const deltaX = touchStartX.current - e.changedTouches[0].clientX;
+    const deltaY = Math.abs(e.changedTouches[0].clientY - touchStartY.current);
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > deltaY) {
+      isDragging.current = true;
+      if (deltaX > 0) {
+        // swiped left → next slide
+        setActiveIndex((prev) => (prev + 1) % total);
       } else {
-        setActiveIndex(
-          (prev) => (prev - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length,
-        );
+        // swiped right → prev slide
+        setActiveIndex((prev) => (prev - 1 + total) % total);
       }
     }
     startAutoSlide();
   };
 
+  const handleSlideClick = () => {
+    if (!isDragging.current) {
+      navigate({ to: "/catalog" });
+    }
+    isDragging.current = false;
+  };
+
   return (
     <section
-      className="relative overflow-hidden"
+      className="relative overflow-hidden select-none"
       aria-label="Promotional banners"
+      data-ocid="home.hero_banner.section"
     >
-      {/* Sliding track */}
+      {/* Holi color splash particles for Holi slide */}
+      {BANNER_SLIDES[activeIndex]?.isHoli && (
+        <div className="absolute inset-0 pointer-events-none z-[1] overflow-hidden">
+          {[
+            "#ff5733",
+            "#ffcc00",
+            "#33cc66",
+            "#3399ff",
+            "#cc33ff",
+            "#ff6699",
+          ].map((color, i) => (
+            <div
+              key={color}
+              className="absolute rounded-full opacity-50"
+              style={{
+                width: `${20 + i * 8}px`,
+                height: `${20 + i * 8}px`,
+                background: color,
+                top: `${10 + i * 12}%`,
+                left: `${5 + i * 14}%`,
+                filter: "blur(2px)",
+                animation: `float-${i} 3s ease-in-out infinite alternate`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Outer container — clips overflow, enables touch */}
       <div
-        className="min-h-[200px] sm:min-h-[260px] overflow-hidden"
+        className="overflow-hidden"
+        style={{ minHeight: "200px" }}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Track — all slides side by side */}
+        {/* Sliding track — width = N × 100%, each slide = 1/N width */}
         <div
           className="flex"
           style={{
-            transform: `translateX(-${activeIndex * 100}%)`,
+            width: `${total * 100}%`,
+            transform: `translateX(-${(activeIndex * 100) / total}%)`,
             transition: "transform 0.5s ease-in-out",
-            width: `${BANNER_SLIDES.length * 100}%`,
+            willChange: "transform",
           }}
         >
           {BANNER_SLIDES.map((slide) => (
-            <button
+            /* biome-ignore lint/a11y/useKeyWithClickEvents: swipe slider handles keyboard via document */
+            <div
               key={slide.id}
-              type="button"
-              className="relative flex items-center text-left"
+              className="relative flex items-center text-left cursor-pointer"
               style={{
                 background: slide.bgGradient,
-                width: `${100 / BANNER_SLIDES.length}%`,
+                width: `${100 / total}%`,
                 minHeight: "200px",
+                flexShrink: 0,
               }}
-              onClick={() => navigate({ to: "/catalog" })}
+              onClick={handleSlideClick}
               aria-label={slide.title}
             >
-              {/* Background image */}
+              {/* Right side product image */}
               <div className="absolute right-0 top-0 bottom-0 w-1/2 sm:w-2/5 pointer-events-none">
                 <img
                   src={slide.image}
                   alt=""
                   aria-hidden="true"
-                  className="w-full h-full object-cover opacity-40 sm:opacity-60"
+                  className="w-full h-full object-cover object-top opacity-55 sm:opacity-70"
                   loading="eager"
+                  draggable={false}
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
               </div>
 
-              {/* Content */}
+              {/* Text Content */}
               <div className="relative z-10 px-4 sm:px-8 py-6 max-w-[62%] sm:max-w-[55%]">
                 <div className="flex items-center flex-wrap gap-2 mb-3">
-                  <span className="text-white/90 text-[10px] font-semibold bg-white/20 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/20">
+                  <span
+                    className={cn(
+                      "text-[10px] font-semibold px-2.5 py-1 rounded-full border",
+                      slide.isHoli
+                        ? "bg-white/30 text-white border-white/40 backdrop-blur-sm"
+                        : "bg-white/20 text-white/90 border-white/20 backdrop-blur-sm",
+                    )}
+                  >
                     {slide.badge}
                   </span>
-                  <span className="inline-flex items-center gap-1 bg-secondary text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                  <span
+                    className={cn(
+                      "inline-flex items-center gap-1 text-white text-xs font-bold px-2.5 py-1 rounded-full",
+                      slide.isHoli ? "bg-orange-500" : "bg-secondary",
+                    )}
+                  >
                     <Zap className="h-3 w-3" />
                     {slide.discount}
                   </span>
                 </div>
-                <h2 className="font-display font-bold text-white text-lg sm:text-2xl leading-tight mb-2">
+                <h2 className="font-display font-bold text-white text-lg sm:text-2xl leading-tight mb-2 drop-shadow-md">
                   {slide.title}
                 </h2>
-                <p className="text-white/80 text-xs sm:text-sm font-body mb-4">
+                <p className="text-white/85 text-xs sm:text-sm font-body mb-4 drop-shadow-sm">
                   {slide.subtitle}
                 </p>
                 <button
@@ -731,18 +1084,23 @@ function HeroBanner() {
                     e.stopPropagation();
                     navigate({ to: "/catalog" });
                   }}
-                  className="inline-flex items-center gap-1.5 bg-white text-primary font-semibold text-xs sm:text-sm px-4 py-2 rounded-full hover:bg-white/95 active:scale-95 transition-all shadow-sm"
+                  className={cn(
+                    "inline-flex items-center gap-1.5 font-semibold text-xs sm:text-sm px-4 py-2 rounded-full active:scale-95 transition-all shadow-md",
+                    slide.isHoli
+                      ? "bg-orange-500 text-white hover:bg-orange-400"
+                      : "bg-white text-primary hover:bg-white/95",
+                  )}
                 >
                   {slide.cta}
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </div>
-            </button>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* Dot indicators — overlaid at bottom */}
+      {/* Dot indicators */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20">
         {BANNER_SLIDES.map((s, i) => (
           <button
@@ -857,6 +1215,80 @@ export function HomePage() {
       {/* Hero Banner */}
       <HeroBanner />
 
+      {/* Holi Special Section */}
+      <section
+        className="mx-3 mt-3 mb-1 rounded-2xl overflow-hidden relative"
+        aria-label="Holi Special offers"
+        style={{
+          background:
+            "linear-gradient(135deg, #ff6b35 0%, #ffd166 30%, #ef8c6f 55%, #ff4e8a 80%, #b848ff 100%)",
+        }}
+      >
+        {/* Decorative color splashes */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {[
+            "#ff3d3d",
+            "#ffeb3b",
+            "#4caf50",
+            "#2196f3",
+            "#9c27b0",
+            "#ff9800",
+          ].map((c, i) => (
+            <div
+              key={c}
+              className="absolute rounded-full opacity-30"
+              style={{
+                width: `${30 + i * 10}px`,
+                height: `${30 + i * 10}px`,
+                background: c,
+                top: `${-5 + i * 15}%`,
+                right: `${2 + i * 8}%`,
+                filter: "blur(3px)",
+              }}
+            />
+          ))}
+        </div>
+        <div className="relative z-10 px-4 py-4 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-white text-lg font-bold">🎨</span>
+              <span className="bg-white/25 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border border-white/30">
+                {language === "hi" ? "होली स्पेशल 2026" : "Holi Special 2026"}
+              </span>
+            </div>
+            <h3 className="text-white font-display font-bold text-base leading-tight drop-shadow">
+              {language === "hi" ? "रंगों का जश्न!" : "Celebrate Colors!"}
+            </h3>
+            <p className="text-white/90 text-xs mt-0.5 font-body">
+              {language === "hi"
+                ? "होली पर 40% तक छूट — सीमित समय के लिए"
+                : "Up to 40% off for Holi — limited time"}
+            </p>
+            <div className="flex items-center gap-1.5 mt-2">
+              {["#ff3d3d", "#ffeb3b", "#4caf50", "#2196f3", "#9c27b0"].map(
+                (c) => (
+                  <div
+                    key={c}
+                    className="w-4 h-4 rounded-full border-2 border-white/60"
+                    style={{ background: c }}
+                  />
+                ),
+              )}
+              <span className="text-white/80 text-[10px] font-semibold ml-0.5">
+                {language === "hi" ? "रंग-बिरंगे कपड़े" : "Colorful Outfits"}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/catalog" })}
+            className="shrink-0 bg-white text-orange-600 font-bold text-xs px-4 py-2.5 rounded-full shadow-lg hover:bg-orange-50 active:scale-95 transition-all"
+          >
+            {language === "hi" ? "देखें" : "Shop"}
+          </button>
+        </div>
+      </section>
+
       {/* Category Row */}
       <section
         className="bg-background py-4 px-3 border-b border-border"
@@ -914,7 +1346,7 @@ export function HomePage() {
         </div>
 
         <div className="flex gap-3 overflow-x-auto snap-scroll px-3 pb-2 scrollbar-none">
-          {MOCK_PRODUCTS.slice(0, 5).map((product) => (
+          {MOCK_PRODUCTS.map((product) => (
             <TrendingCard key={product.id} product={product} />
           ))}
           {/* View all card */}

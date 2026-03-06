@@ -128,18 +128,27 @@ export function OrderHistoryPage() {
 
                   {/* Order content */}
                   <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
+                    <div className="flex items-start gap-3">
+                      {/* Product thumbnail */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
+                        <img
+                          src={"/assets/uploads/DSC3612_480x480-2.jpg"}
+                          alt={order.listingTitle || "Order"}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
                           {order.listingTitle || "Custom Order"}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {order.category}
                         </p>
+                        <span className="font-display font-bold text-primary text-base">
+                          ₹{order.totalPrice.toLocaleString("hi-IN")}
+                        </span>
                       </div>
-                      <span className="font-display font-bold text-primary text-base">
-                        ₹{order.totalPrice.toLocaleString("hi-IN")}
-                      </span>
                     </div>
 
                     {/* Compact tracking bar */}
@@ -201,18 +210,27 @@ export function OrderHistoryPage() {
                   </div>
 
                   <div className="p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">
+                    <div className="flex items-start gap-3">
+                      {/* Product thumbnail */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden bg-muted shrink-0">
+                        <img
+                          src={"/assets/uploads/DSC3612_480x480-2.jpg"}
+                          alt={order.listingTitle}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">
                           {order.listingTitle}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {order.category}
                         </p>
+                        <span className="font-display font-bold text-primary text-base">
+                          ₹{order.price.toLocaleString("hi-IN")}
+                        </span>
                       </div>
-                      <span className="font-display font-bold text-primary text-base">
-                        ₹{order.price.toLocaleString("hi-IN")}
-                      </span>
                     </div>
 
                     {order.status !== "cancelled" && (

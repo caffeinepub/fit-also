@@ -93,7 +93,8 @@ import {
 } from "lucide-react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApprovalStatus } from "../backend";
+import { toast } from "sonner";
+import { ApprovalStatus, ExternalBlob } from "../backend";
 import { AdminCustomizationPanel } from "../components/AdminCustomizationPanel";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
@@ -944,7 +945,9 @@ function CustomersSection() {
 
 // ─── Section: Orders ──────────────────────────────────────────────────────────
 
-function OrdersSection() {
+function OrdersSection({
+  onNewOrders,
+}: { onNewOrders?: (count: number) => void }) {
   const { actor } = useActor();
   const { identity } = useInternetIdentity();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -959,43 +962,84 @@ function OrdersSection() {
   >(null);
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  // biome-ignore lint/correctness/noUnusedVariables: setAdminNote is reserved for future admin note input UI
   const [adminNote, setAdminNote] = useState("");
+  const prevOrderCountRef = useRef<number>(0);
 
   const loadOrders = useCallback(() => setOrders(getAllOrders()), []);
   useEffect(() => {
     loadOrders();
   }, [loadOrders]);
 
-  // Also fetch from backend
+  // Initial backend fetch + 10-second polling
   useEffect(() => {
     if (!actor || !identity) return;
-    actor
-      .getAllExtendedOrders()
-      .then((result) => setBackendOrders(result))
-      .catch(() => {});
-  }, [actor, identity]);
+
+    const fetchOrders = async () => {
+      try {
+        const result = await actor.getAllExtendedOrders();
+        setBackendOrders(result);
+        // Detect new orders vs previous count
+        if (
+          prevOrderCountRef.current > 0 &&
+          result.length > prevOrderCountRef.current
+        ) {
+          const newCount = result.length - prevOrderCountRef.current;
+          toast(`🔔 New order received! (${newCount} new)`, { duration: 5000 });
+          onNewOrders?.(newCount);
+        }
+        prevOrderCountRef.current = result.length;
+      } catch {}
+    };
+
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 10000);
+    return () => clearInterval(interval);
+  }, [actor, identity, onNewOrders]);
 
   const hasBackendOrders = backendOrders.length > 0;
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (
+    orderId: string,
+    newStatus: string,
+    note?: string,
+  ) => {
     setUpdatingId(orderId);
+    const noteToUse = note !== undefined ? note : adminNote;
     // Try backend first
     if (actor && hasBackendOrders) {
       try {
         await actor.updateExtendedOrderStatus(
           orderId,
           newStatus,
-          adminNote || "",
+          noteToUse || "",
         );
         setBackendOrders((prev) =>
-          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+          prev.map((o) =>
+            o.id === orderId
+              ? {
+                  ...o,
+                  status: newStatus,
+                  adminNotes: noteToUse || o.adminNotes,
+                }
+              : o,
+          ),
+        );
+        // Also update the dialog if open
+        setViewBackendOrder((prev) =>
+          prev?.id === orderId
+            ? {
+                ...prev,
+                status: newStatus,
+                adminNotes: noteToUse || prev.adminNotes,
+              }
+            : prev,
         );
         logAdminAction(
           "Updated order status",
           "orders",
           `Order ${orderId.slice(0, 8)} → ${newStatus}`,
         );
+        toast.success(`Order status updated to "${newStatus}"`);
         setUpdatingId(null);
         return;
       } catch {}
@@ -1063,6 +1107,23 @@ function OrdersSection() {
     ? backendOrders.length
     : orders.length;
 
+  // 8-stage progress tracker for order detail dialog
+  const ORDER_STAGES = [
+    "Order Placed",
+    "Confirmed",
+    "Assigned to Tailor",
+    "Stitching Started",
+    "Quality Check",
+    "Dispatched",
+    "Out for Delivery",
+    "Delivered",
+  ];
+
+  const getStageIndex = (status: string) => {
+    const idx = ORDER_STAGES.indexOf(status);
+    return idx >= 0 ? idx : -1;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1070,7 +1131,7 @@ function OrdersSection() {
           <h2 className="text-2xl font-bold">Orders Management</h2>
           <p className="text-muted-foreground">
             {totalOrderCount} total orders{" "}
-            {hasBackendOrders ? "(Live)" : "(Local)"}
+            {hasBackendOrders ? "(Live — auto-refreshing)" : "(Local)"}
           </p>
         </div>
         <div className="flex gap-3 flex-wrap">
@@ -1081,10 +1142,11 @@ function OrdersSection() {
               className="pl-9 w-48"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              data-ocid="orders.search_input"
             />
           </div>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
+            <SelectTrigger className="w-40" data-ocid="orders.filter.select">
               <SelectValue placeholder="Filter status" />
             </SelectTrigger>
             <SelectContent>
@@ -1100,6 +1162,7 @@ function OrdersSection() {
             variant="outline"
             size="sm"
             onClick={() => setSortDir((d) => (d === "desc" ? "asc" : "desc"))}
+            data-ocid="orders.toggle"
           >
             <ArrowUpDown className="w-4 h-4 mr-1" />{" "}
             {sortDir === "desc" ? "Newest" : "Oldest"}
@@ -1110,12 +1173,12 @@ function OrdersSection() {
       <Card className="border-0 shadow-md">
         <CardContent className="p-0">
           <ScrollArea className="h-[500px]">
-            <Table>
+            <Table data-ocid="orders.table">
               <TableHeader>
                 <TableRow>
                   <TableHead>Order ID</TableHead>
+                  <TableHead>Customer</TableHead>
                   <TableHead>Item</TableHead>
-                  <TableHead>Category</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Status</TableHead>
@@ -1129,21 +1192,32 @@ function OrdersSection() {
                     <TableCell
                       colSpan={8}
                       className="text-center py-8 text-muted-foreground"
+                      data-ocid="orders.empty_state"
                     >
                       No orders found
                     </TableCell>
                   </TableRow>
                 ) : hasBackendOrders ? (
                   (displayOrders as import("../backend").ExtendedOrder[]).map(
-                    (order) => (
-                      <TableRow key={order.id}>
+                    (order, idx) => (
+                      <TableRow
+                        key={order.id}
+                        data-ocid={`orders.row.${idx + 1}`}
+                      >
                         <TableCell className="font-mono text-xs">
                           {order.id?.slice(0, 8)}...
                         </TableCell>
-                        <TableCell className="max-w-[120px] truncate">
-                          {order.listingTitle || "N/A"}
+                        <TableCell className="max-w-[100px] truncate text-sm">
+                          <div className="font-medium">
+                            {order.customerName || "N/A"}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {order.customerPhone || ""}
+                          </div>
                         </TableCell>
-                        <TableCell>{order.category || "—"}</TableCell>
+                        <TableCell className="max-w-[120px] truncate">
+                          {order.listingTitle || order.category || "N/A"}
+                        </TableCell>
                         <TableCell className="font-semibold">
                           {formatCurrency(order.totalPrice || 0)}
                         </TableCell>
@@ -1184,6 +1258,7 @@ function OrdersSection() {
                             size="sm"
                             variant="ghost"
                             onClick={() => setViewBackendOrder(order)}
+                            data-ocid={`orders.edit_button.${idx + 1}`}
                           >
                             <Eye className="w-3 h-3" />
                           </Button>
@@ -1192,15 +1267,18 @@ function OrdersSection() {
                     ),
                   )
                 ) : (
-                  (displayOrders as Order[]).map((order) => (
-                    <TableRow key={order.id}>
+                  (displayOrders as Order[]).map((order, idx) => (
+                    <TableRow
+                      key={order.id}
+                      data-ocid={`orders.row.${idx + 1}`}
+                    >
                       <TableCell className="font-mono text-xs">
                         {order.id?.slice(0, 8)}...
                       </TableCell>
+                      <TableCell>—</TableCell>
                       <TableCell className="max-w-[120px] truncate">
                         {order.listingTitle || "N/A"}
                       </TableCell>
-                      <TableCell>{order.category || "—"}</TableCell>
                       <TableCell className="font-semibold">
                         {formatCurrency(order.totalPrice || 0)}
                       </TableCell>
@@ -1240,6 +1318,7 @@ function OrdersSection() {
                           size="sm"
                           variant="ghost"
                           onClick={() => setViewOrder(order)}
+                          data-ocid={`orders.edit_button.${idx + 1}`}
                         >
                           <Eye className="w-3 h-3" />
                         </Button>
@@ -1255,7 +1334,7 @@ function OrdersSection() {
 
       {/* Local Order Detail Dialog */}
       <Dialog open={!!viewOrder} onOpenChange={() => setViewOrder(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" data-ocid="orders.dialog">
           <DialogHeader>
             <DialogTitle>Order Details</DialogTitle>
           </DialogHeader>
@@ -1324,122 +1403,336 @@ function OrdersSection() {
         </DialogContent>
       </Dialog>
 
-      {/* Backend Order Detail Dialog */}
+      {/* Backend Order Detail Dialog — Enhanced */}
       <Dialog
         open={!!viewBackendOrder}
-        onOpenChange={() => setViewBackendOrder(null)}
+        onOpenChange={() => {
+          setViewBackendOrder(null);
+          setAdminNote("");
+        }}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" data-ocid="orders.dialog">
           <DialogHeader>
-            <DialogTitle>Order Details (Live)</DialogTitle>
+            <DialogTitle>Order Details</DialogTitle>
+            <DialogDescription>
+              Full order details and status management
+            </DialogDescription>
           </DialogHeader>
           {viewBackendOrder && (
-            <ScrollArea className="max-h-[70vh]">
-              <div className="space-y-4 pr-4">
-                <div className="grid grid-cols-2 gap-4">
+            <ScrollArea className="max-h-[75vh]">
+              <div className="space-y-5 pr-4">
+                {/* 8-stage horizontal progress tracker */}
+                <div>
+                  <Label className="text-muted-foreground font-semibold text-xs uppercase tracking-wide">
+                    Order Progress
+                  </Label>
+                  <div className="mt-3 overflow-x-auto pb-2">
+                    <div className="flex items-start gap-0 min-w-max">
+                      {ORDER_STAGES.map((stage, i) => {
+                        const currentIdx = getStageIndex(
+                          viewBackendOrder.status,
+                        );
+                        const isCancelled =
+                          viewBackendOrder.status === "Cancelled";
+                        const isDone = !isCancelled && i < currentIdx;
+                        const isCurrent = !isCancelled && i === currentIdx;
+                        return (
+                          <div key={stage} className="flex items-center">
+                            <div className="flex flex-col items-center">
+                              <div
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-all ${
+                                  isDone
+                                    ? "bg-green-500 border-green-500 text-white"
+                                    : isCurrent
+                                      ? "bg-primary border-primary text-primary-foreground ring-2 ring-primary/30"
+                                      : "bg-muted border-border text-muted-foreground"
+                                }`}
+                              >
+                                {isDone ? "✓" : i + 1}
+                              </div>
+                              <p
+                                className={`text-[9px] mt-1 text-center w-14 leading-tight ${
+                                  isCurrent
+                                    ? "font-bold text-primary"
+                                    : isDone
+                                      ? "text-green-600"
+                                      : "text-muted-foreground"
+                                }`}
+                              >
+                                {stage}
+                              </p>
+                            </div>
+                            {i < ORDER_STAGES.length - 1 && (
+                              <div
+                                className={`h-0.5 w-6 mx-0.5 mt-[-10px] ${
+                                  isDone ? "bg-green-500" : "bg-border"
+                                }`}
+                              />
+                            )}
+                          </div>
+                        );
+                      })}
+                      {viewBackendOrder.status === "Cancelled" && (
+                        <div className="ml-2 flex items-center">
+                          <span className="text-xs text-red-500 font-semibold bg-red-50 px-2 py-1 rounded">
+                            Cancelled
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Customer & Order Info */}
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-muted-foreground">Order ID</Label>
-                    <p className="font-mono text-xs break-all">
+                    <Label className="text-muted-foreground text-xs">
+                      Order ID
+                    </Label>
+                    <p className="font-mono text-xs break-all mt-0.5">
                       {viewBackendOrder.id}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Status</Label>
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(viewBackendOrder.status)}`}
-                    >
-                      {viewBackendOrder.status}
-                    </span>
+                    <Label className="text-muted-foreground text-xs">
+                      Current Status
+                    </Label>
+                    <div className="mt-0.5">
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(viewBackendOrder.status)}`}
+                      >
+                        {viewBackendOrder.status}
+                      </span>
+                    </div>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Customer</Label>
-                    <p className="font-medium">
+                    <Label className="text-muted-foreground text-xs">
+                      Customer Name
+                    </Label>
+                    <p className="font-medium text-sm mt-0.5">
                       {viewBackendOrder.customerName || "N/A"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Phone</Label>
-                    <p>{viewBackendOrder.customerPhone || "—"}</p>
+                    <Label className="text-muted-foreground text-xs">
+                      Phone
+                    </Label>
+                    <p className="text-sm mt-0.5">
+                      {viewBackendOrder.customerPhone || "—"}
+                    </p>
+                  </div>
+                  {viewBackendOrder.customerAltPhone && (
+                    <div>
+                      <Label className="text-muted-foreground text-xs">
+                        Alt Phone
+                      </Label>
+                      <p className="text-sm mt-0.5">
+                        {viewBackendOrder.customerAltPhone}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <Label className="text-muted-foreground text-xs">
+                      Item
+                    </Label>
+                    <p className="text-sm mt-0.5">
+                      {viewBackendOrder.listingTitle || "N/A"}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Item</Label>
-                    <p>{viewBackendOrder.listingTitle || "N/A"}</p>
+                    <Label className="text-muted-foreground text-xs">
+                      Category
+                    </Label>
+                    <p className="text-sm mt-0.5">
+                      {viewBackendOrder.category || "N/A"}
+                    </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Category</Label>
-                    <p>{viewBackendOrder.category || "N/A"}</p>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">Amount</Label>
-                    <p className="font-bold text-green-600">
+                    <Label className="text-muted-foreground text-xs">
+                      Amount
+                    </Label>
+                    <p className="font-bold text-green-600 text-sm mt-0.5">
                       {formatCurrency(viewBackendOrder.totalPrice || 0)}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Payment</Label>
-                    <p className="text-yellow-600 font-semibold">
+                    <Label className="text-muted-foreground text-xs">
+                      Payment Mode
+                    </Label>
+                    <p className="text-yellow-600 font-semibold text-sm mt-0.5">
                       {viewBackendOrder.paymentMode || "COD"}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">Order Date</Label>
-                    <p>
+                    <Label className="text-muted-foreground text-xs">
+                      Order Date
+                    </Label>
+                    <p className="text-sm mt-0.5">
                       {new Date(
                         Number(viewBackendOrder.orderDate),
                       ).toLocaleString("en-IN")}
                     </p>
                   </div>
                   <div>
-                    <Label className="text-muted-foreground">
+                    <Label className="text-muted-foreground text-xs">
                       Est. Delivery
                     </Label>
-                    <p>
+                    <p className="text-sm mt-0.5">
                       {viewBackendOrder.estimatedDeliveryDate || "10-14 days"}
                     </p>
                   </div>
                 </div>
+
                 <Separator />
+
+                {/* Full Delivery Address */}
                 <div>
-                  <Label className="text-muted-foreground font-semibold">
+                  <Label className="text-muted-foreground font-semibold text-xs uppercase tracking-wide">
                     Delivery Address
                   </Label>
-                  <p className="mt-1 text-sm">
-                    {[
-                      viewBackendOrder.deliveryAddress.houseNo,
-                      viewBackendOrder.deliveryAddress.area,
-                      viewBackendOrder.deliveryAddress.city,
-                      viewBackendOrder.deliveryAddress.state,
-                      viewBackendOrder.deliveryAddress.pinCode,
-                    ]
-                      .filter(Boolean)
-                      .join(", ")}
-                  </p>
-                </div>
-                {viewBackendOrder.adminNotes && (
-                  <div>
-                    <Label className="text-muted-foreground font-semibold">
-                      Admin Notes
-                    </Label>
-                    <p className="text-sm mt-1">
-                      {viewBackendOrder.adminNotes}
-                    </p>
+                  <div className="mt-2 bg-muted/50 rounded-lg p-3 space-y-1">
+                    {viewBackendOrder.deliveryAddress.houseNo && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground text-xs">
+                          House/Flat:{" "}
+                        </span>
+                        {viewBackendOrder.deliveryAddress.houseNo}
+                      </p>
+                    )}
+                    {viewBackendOrder.deliveryAddress.area && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground text-xs">
+                          Area/Street:{" "}
+                        </span>
+                        {viewBackendOrder.deliveryAddress.area}
+                      </p>
+                    )}
+                    {viewBackendOrder.deliveryAddress.city && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground text-xs">
+                          City:{" "}
+                        </span>
+                        {viewBackendOrder.deliveryAddress.city}
+                      </p>
+                    )}
+                    {viewBackendOrder.deliveryAddress.state && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground text-xs">
+                          State:{" "}
+                        </span>
+                        {viewBackendOrder.deliveryAddress.state}
+                      </p>
+                    )}
+                    {viewBackendOrder.deliveryAddress.pinCode && (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground text-xs">
+                          Pin Code:{" "}
+                        </span>
+                        <span className="font-semibold">
+                          {viewBackendOrder.deliveryAddress.pinCode}
+                        </span>
+                      </p>
+                    )}
                   </div>
+                </div>
+
+                {/* Measurements */}
+                {viewBackendOrder.measurementsJson &&
+                  (() => {
+                    try {
+                      const measurements = JSON.parse(
+                        viewBackendOrder.measurementsJson,
+                      );
+                      if (
+                        Array.isArray(measurements) &&
+                        measurements.length > 0
+                      ) {
+                        return (
+                          <>
+                            <Separator />
+                            <div>
+                              <Label className="text-muted-foreground font-semibold text-xs uppercase tracking-wide">
+                                Measurements
+                              </Label>
+                              <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {measurements.map(
+                                  (m: { name: string; value: number }) => (
+                                    <div
+                                      key={m.name}
+                                      className="bg-muted rounded p-2"
+                                    >
+                                      <p className="text-xs text-muted-foreground">
+                                        {m.name}
+                                      </p>
+                                      <p className="text-sm font-semibold">
+                                        {m.value} in
+                                      </p>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            </div>
+                          </>
+                        );
+                      }
+                    } catch {}
+                    return null;
+                  })()}
+
+                {/* Previous Admin Notes */}
+                {viewBackendOrder.adminNotes && (
+                  <>
+                    <Separator />
+                    <div>
+                      <Label className="text-muted-foreground font-semibold text-xs uppercase tracking-wide">
+                        Previous Admin Notes
+                      </Label>
+                      <p className="text-sm mt-1 bg-yellow-50 dark:bg-yellow-900/20 rounded p-2 border border-yellow-200 dark:border-yellow-800">
+                        {viewBackendOrder.adminNotes}
+                      </p>
+                    </div>
+                  </>
                 )}
+
+                <Separator />
+
+                {/* Update Status with Admin Notes */}
                 <div>
-                  <Label className="text-muted-foreground font-semibold">
+                  <Label className="text-muted-foreground font-semibold text-xs uppercase tracking-wide">
                     Update Status
                   </Label>
-                  <div className="flex gap-2 mt-2">
+                  <div className="mt-2 space-y-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground mb-1 block">
+                        Admin Note (optional)
+                      </Label>
+                      <Textarea
+                        placeholder="Add a note for this status update..."
+                        value={adminNote}
+                        onChange={(e) => setAdminNote(e.target.value)}
+                        rows={2}
+                        className="text-sm resize-none"
+                        data-ocid="orders.textarea"
+                      />
+                    </div>
                     <Select
                       value={viewBackendOrder.status}
                       onValueChange={async (v) => {
-                        await updateOrderStatus(viewBackendOrder.id, v);
-                        setViewBackendOrder((prev) =>
-                          prev ? { ...prev, status: v } : null,
+                        await updateOrderStatus(
+                          viewBackendOrder.id,
+                          v,
+                          adminNote,
                         );
+                        setAdminNote("");
                       }}
+                      disabled={!!updatingId}
                     >
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger
+                        className="w-full"
+                        data-ocid="orders.select"
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -1839,84 +2132,184 @@ function TailorsSection({
 
 // ─── Section: Products ────────────────────────────────────────────────────────
 
+interface ProductFormState {
+  title: string;
+  category: string;
+  description: string;
+  price: string;
+  imageFile: File | null;
+  imagePreview: string;
+}
+
+const EMPTY_PRODUCT_FORM: ProductFormState = {
+  title: "",
+  category: "",
+  description: "",
+  price: "",
+  imageFile: null,
+  imagePreview: "",
+};
+
 function ProductsSection() {
-  const [listings, setListings] = useState<
-    (Listing & { tailorName: string })[]
-  >([]);
-  const [editListing, setEditListing] = useState<Listing | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Listing>>({});
-  const [deleteTarget, setDeleteTarget] = useState<Listing | null>(null);
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-
-  const loadListings = useCallback(() => {
-    const tailors = getAllTailors();
-    const all: (Listing & { tailorName: string })[] = [];
-    for (const t of tailors) {
-      for (const l of t.listings || []) {
-        all.push({ ...l, tailorName: t.shopName || t.ownerName || "Unknown" });
-      }
-    }
-    setListings(all);
-  }, []);
-
-  useEffect(() => {
-    loadListings();
-  }, [loadListings]);
-
-  const updateListingInStorage = (
-    listing: Listing,
-    updates: Partial<Listing>,
-  ) => {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith("tailor_")) {
-        try {
-          const tailor: TailorProfile = JSON.parse(
-            localStorage.getItem(key) || "{}",
-          );
-          const idx = (tailor.listings || []).findIndex(
-            (l) => l.id === listing.id,
-          );
-          if (idx !== -1) {
-            tailor.listings[idx] = { ...tailor.listings[idx], ...updates };
-            localStorage.setItem(key, JSON.stringify(tailor));
-            break;
-          }
-        } catch {}
-      }
-    }
-    loadListings();
-  };
-
-  const deleteListing = (listing: Listing) => {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith("tailor_")) {
-        try {
-          const tailor: TailorProfile = JSON.parse(
-            localStorage.getItem(key) || "{}",
-          );
-          const idx = (tailor.listings || []).findIndex(
-            (l) => l.id === listing.id,
-          );
-          if (idx !== -1) {
-            tailor.listings.splice(idx, 1);
-            localStorage.setItem(key, JSON.stringify(tailor));
-            break;
-          }
-        } catch {}
-      }
-    }
-    setDeleteTarget(null);
-    loadListings();
-  };
-
-  const filtered = listings.filter(
-    (l) =>
-      l.title?.toLowerCase().includes(search.toLowerCase()) ||
-      l.category?.toLowerCase().includes(search.toLowerCase()) ||
-      l.tailorName?.toLowerCase().includes(search.toLowerCase()),
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editProduct, setEditProduct] = useState<
+    import("../backend").Product | null
+  >(null);
+  const [deleteTarget, setDeleteTarget] = useState<
+    import("../backend").Product | null
+  >(null);
+  const [form, setForm] = useState<ProductFormState>(EMPTY_PRODUCT_FORM);
+  const [saving, setSaving] = useState(false);
+  const [productImages, setProductImages] = useState<Record<string, string>>(
+    {},
   );
+  const imageInputRef = useRef<HTMLInputElement>(null);
+
+  // Load products from backend via getPlatformConfig
+  const { data: platformConfig, isLoading } = useQuery({
+    queryKey: ["platformConfig"],
+    queryFn: async () => {
+      if (!actor) return null;
+      return actor.getPlatformConfig();
+    },
+    enabled: !!actor,
+  });
+
+  const products = (platformConfig?.products ?? []).filter((p) => !p.isDeleted);
+
+  // Load product images from ExternalBlob URLs
+  useEffect(() => {
+    for (const product of products) {
+      if (product.image && !productImages[product.id]) {
+        try {
+          const url = product.image.getDirectURL();
+          if (url) {
+            setProductImages((prev) => ({ ...prev, [product.id]: url }));
+          }
+        } catch {}
+      }
+    }
+  }, [products, productImages]);
+
+  const filtered = products.filter(
+    (p) =>
+      p.title?.toLowerCase().includes(search.toLowerCase()) ||
+      p.category?.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (ev.target?.result) {
+        setForm((f) => ({
+          ...f,
+          imageFile: file,
+          imagePreview: ev.target!.result as string,
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const buildProductFromForm = async (
+    existingProduct?: import("../backend").Product,
+  ): Promise<import("../backend").Product> => {
+    let imageBlob: ExternalBlob;
+    if (form.imageFile) {
+      const arrayBuffer = await form.imageFile.arrayBuffer();
+      imageBlob = ExternalBlob.fromBytes(new Uint8Array(arrayBuffer));
+    } else if (existingProduct?.image) {
+      imageBlob = existingProduct.image;
+    } else {
+      // Placeholder blank image
+      imageBlob = ExternalBlob.fromBytes(new Uint8Array(0));
+    }
+
+    return {
+      id: existingProduct?.id ?? generateId(),
+      title: form.title,
+      category: form.category,
+      description: form.description,
+      price: Number(form.price) || 0,
+      isDeleted: false,
+      tailorId: "admin",
+      image: imageBlob,
+      customizationOptions: existingProduct?.customizationOptions ?? {
+        sleeveStyles: [],
+        colorPatterns: [],
+        neckStyles: [],
+        fabricTypes: [],
+        workTypes: [],
+      },
+    };
+  };
+
+  const handleSave = async () => {
+    if (!actor || !form.title || !form.category || !form.price) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    setSaving(true);
+    try {
+      const product = await buildProductFromForm(editProduct ?? undefined);
+      if (editProduct) {
+        await actor.adminUpdateProduct(product);
+        toast.success("Product updated successfully!");
+        logAdminAction("Updated product", "products", product.title);
+      } else {
+        await actor.adminAddProduct(product);
+        toast.success("Product added successfully!");
+        logAdminAction("Added product", "products", product.title);
+      }
+      queryClient.invalidateQueries({ queryKey: ["platformConfig"] });
+      setShowAddDialog(false);
+      setEditProduct(null);
+      setForm(EMPTY_PRODUCT_FORM);
+    } catch {
+      toast.error("Failed to save product. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSoftDelete = async (product: import("../backend").Product) => {
+    if (!actor) return;
+    try {
+      await actor.adminUpdateProduct({ ...product, isDeleted: true });
+      toast.success(`"${product.title}" removed from listings.`);
+      logAdminAction("Soft-deleted product", "products", product.title);
+      queryClient.invalidateQueries({ queryKey: ["platformConfig"] });
+    } catch {
+      toast.error("Failed to remove product.");
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  const openEdit = (product: import("../backend").Product) => {
+    setEditProduct(product);
+    setForm({
+      title: product.title,
+      category: product.category,
+      description: product.description,
+      price: String(product.price),
+      imageFile: null,
+      imagePreview: productImages[product.id] ?? "",
+    });
+    setShowAddDialog(true);
+  };
+
+  const openAdd = () => {
+    setEditProduct(null);
+    setForm(EMPTY_PRODUCT_FORM);
+    setShowAddDialog(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -1924,131 +2317,175 @@ function ProductsSection() {
         <div>
           <h2 className="text-2xl font-bold">Products & Catalog</h2>
           <p className="text-muted-foreground">
-            {listings.length} total listings
+            {isLoading ? "Loading..." : `${products.length} active products`}
           </p>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            className="pl-9 w-64"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        <div className="flex gap-3 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search products..."
+              className="pl-9 w-64"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              data-ocid="products.search_input"
+            />
+          </div>
+          <Button onClick={openAdd} data-ocid="products.primary_button">
+            <Plus className="w-4 h-4 mr-2" /> Add New Product
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filtered.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-muted-foreground">
-            No products found
-          </div>
-        ) : (
-          filtered.map((listing) => (
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
             <Card
-              key={listing.id}
-              className="border-0 shadow-md overflow-hidden"
+              key={i}
+              className="border-0 shadow-md overflow-hidden animate-pulse"
             >
-              <div className="relative h-40 bg-muted">
-                {listing.imageUrl ? (
-                  <img
-                    src={listing.imageUrl}
-                    alt={listing.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Package className="w-12 h-12 text-muted-foreground" />
-                  </div>
-                )}
-                <div className="absolute top-2 right-2">
-                  <Badge variant="secondary" className="text-xs">
-                    {listing.category}
-                  </Badge>
-                </div>
-              </div>
-              <CardContent className="p-3">
-                <p className="font-semibold text-sm truncate">
-                  {listing.title}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {listing.tailorName}
-                </p>
-                <p className="font-bold text-primary mt-1">
-                  {formatCurrency(listing.price || 0)}
-                </p>
-                <div className="flex gap-1 mt-3 flex-wrap">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 text-xs"
-                    onClick={() => {
-                      setEditListing(listing);
-                      setEditForm(listing);
-                    }}
-                  >
-                    <Edit className="w-3 h-3 mr-1" /> Edit
-                  </Button>
-                  <ImageUploadButton
-                    label="Img"
-                    onImageSelected={(url) =>
-                      updateListingInStorage(listing, { imageUrl: url })
-                    }
-                  />
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => setDeleteTarget(listing)}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
-                </div>
+              <div className="h-40 bg-muted" />
+              <CardContent className="p-3 space-y-2">
+                <div className="h-4 bg-muted rounded w-3/4" />
+                <div className="h-3 bg-muted rounded w-1/2" />
               </CardContent>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filtered.length === 0 ? (
+            <div
+              className="col-span-full text-center py-12 text-muted-foreground"
+              data-ocid="products.empty_state"
+            >
+              No products found. Add your first product!
+            </div>
+          ) : (
+            filtered.map((product, idx) => (
+              <Card
+                key={product.id}
+                className="border-0 shadow-md overflow-hidden"
+                data-ocid={`products.card.${idx + 1}`}
+              >
+                <div className="relative h-44 bg-muted">
+                  {productImages[product.id] ? (
+                    <img
+                      src={productImages[product.id]}
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="w-12 h-12 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="absolute top-2 right-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {product.category}
+                    </Badge>
+                  </div>
+                </div>
+                <CardContent className="p-3">
+                  <p className="font-semibold text-sm truncate">
+                    {product.title}
+                  </p>
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                    {product.description || "—"}
+                  </p>
+                  <p className="font-bold text-primary mt-1">
+                    {formatCurrency(product.price || 0)}
+                  </p>
+                  <div className="flex gap-1 mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-xs"
+                      onClick={() => openEdit(product)}
+                      data-ocid={`products.edit_button.${idx + 1}`}
+                    >
+                      <Edit className="w-3 h-3 mr-1" /> Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => setDeleteTarget(product)}
+                      data-ocid={`products.delete_button.${idx + 1}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
 
-      {/* Edit Listing Dialog */}
-      <Dialog open={!!editListing} onOpenChange={() => setEditListing(null)}>
-        <DialogContent className="max-w-xl">
+      {/* Add / Edit Product Dialog */}
+      <Dialog
+        open={showAddDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowAddDialog(false);
+            setEditProduct(null);
+            setForm(EMPTY_PRODUCT_FORM);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg" data-ocid="products.dialog">
           <DialogHeader>
-            <DialogTitle>Edit Listing</DialogTitle>
+            <DialogTitle>
+              {editProduct ? "Edit Product" : "Add New Product"}
+            </DialogTitle>
+            <DialogDescription>
+              {editProduct
+                ? "Update product details"
+                : "Add a new product to the catalog"}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Title</Label>
+              <Label htmlFor="prod-title">
+                Title <span className="text-destructive">*</span>
+              </Label>
               <Input
-                value={editForm.title || ""}
+                id="prod-title"
+                value={form.title}
                 onChange={(e) =>
-                  setEditForm((f) => ({ ...f, title: e.target.value }))
+                  setForm((f) => ({ ...f, title: e.target.value }))
                 }
+                placeholder="e.g. Silk Banarasi Lehenga"
+                data-ocid="products.input"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Price (₹)</Label>
+                <Label htmlFor="prod-price">
+                  Price (₹) <span className="text-destructive">*</span>
+                </Label>
                 <Input
+                  id="prod-price"
                   type="number"
-                  value={editForm.price || ""}
+                  min="0"
+                  value={form.price}
                   onChange={(e) =>
-                    setEditForm((f) => ({
-                      ...f,
-                      price: Number(e.target.value),
-                    }))
+                    setForm((f) => ({ ...f, price: e.target.value }))
                   }
+                  placeholder="e.g. 2500"
                 />
               </div>
               <div>
-                <Label>Category</Label>
+                <Label htmlFor="prod-category">
+                  Category <span className="text-destructive">*</span>
+                </Label>
                 <Select
-                  value={editForm.category || ""}
-                  onValueChange={(v) =>
-                    setEditForm((f) => ({ ...f, category: v }))
-                  }
+                  value={form.category}
+                  onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
                 >
-                  <SelectTrigger>
-                    <SelectValue />
+                  <SelectTrigger id="prod-category" data-ocid="products.select">
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {GARMENT_CATEGORIES.map((c) => (
@@ -2061,52 +2498,111 @@ function ProductsSection() {
               </div>
             </div>
             <div>
-              <Label>Description</Label>
+              <Label htmlFor="prod-desc">Description</Label>
               <Textarea
-                value={editForm.description || ""}
+                id="prod-desc"
+                value={form.description}
                 onChange={(e) =>
-                  setEditForm((f) => ({ ...f, description: e.target.value }))
+                  setForm((f) => ({ ...f, description: e.target.value }))
                 }
                 rows={3}
+                placeholder="Describe the product..."
+                data-ocid="products.textarea"
               />
+            </div>
+            <div>
+              <Label>Product Image</Label>
+              <div className="mt-1 flex items-center gap-3">
+                {form.imagePreview ? (
+                  <img
+                    src={form.imagePreview}
+                    alt="Preview"
+                    className="w-20 h-20 object-cover rounded-lg border"
+                  />
+                ) : (
+                  <div className="w-20 h-20 rounded-lg border bg-muted flex items-center justify-center">
+                    <Package className="w-8 h-8 text-muted-foreground" />
+                  </div>
+                )}
+                <div>
+                  <input
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageChange}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => imageInputRef.current?.click()}
+                    data-ocid="products.upload_button"
+                  >
+                    <Upload className="w-3 h-3 mr-1" />
+                    {form.imagePreview ? "Change Image" : "Upload Image"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Any format, any size
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditListing(null)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddDialog(false);
+                setEditProduct(null);
+                setForm(EMPTY_PRODUCT_FORM);
+              }}
+              data-ocid="products.cancel_button"
+            >
               Cancel
             </Button>
             <Button
-              onClick={() => {
-                if (editListing) updateListingInStorage(editListing, editForm);
-                setEditListing(null);
-              }}
+              onClick={handleSave}
+              disabled={saving || !form.title || !form.category || !form.price}
+              data-ocid="products.submit_button"
             >
-              Save
+              {saving ? (
+                <>
+                  <RefreshCw className="w-3 h-3 mr-1 animate-spin" /> Saving...
+                </>
+              ) : editProduct ? (
+                "Save Changes"
+              ) : (
+                "Add Product"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Soft Delete Confirmation */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
       >
-        <AlertDialogContent>
+        <AlertDialogContent data-ocid="products.dialog">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Listing?</AlertDialogTitle>
+            <AlertDialogTitle>Remove Product?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete "{deleteTarget?.title}". This action
-              cannot be undone.
+              This will hide "{deleteTarget?.title}" from the catalog (soft
+              delete). It can be restored later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-ocid="products.cancel_button">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => deleteTarget && deleteListing(deleteTarget)}
+              onClick={() => deleteTarget && handleSoftDelete(deleteTarget)}
               className="bg-destructive text-destructive-foreground"
+              data-ocid="products.delete_button"
             >
-              Delete
+              Remove
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -4141,6 +4637,7 @@ export default function AdminPanel() {
   const [showAdminClaim, setShowAdminClaim] = useState(false);
   const [claimEmail, setClaimEmail] = useState("");
   const [claimError, setClaimError] = useState("");
+  const [newOrderCount, setNewOrderCount] = useState(0);
 
   // Initialize localStorage defaults
   useEffect(() => {
@@ -4331,7 +4828,11 @@ export default function AdminPanel() {
       case "analytics":
         return <CustomerAnalyticsSection />;
       case "orders":
-        return <OrdersSection />;
+        return (
+          <OrdersSection
+            onNewOrders={(count) => setNewOrderCount((prev) => prev + count)}
+          />
+        );
       case "tailors":
         return (
           <TailorsSection
@@ -4422,13 +4923,16 @@ export default function AdminPanel() {
               {NAV_ITEMS.map((item) => {
                 const Icon = item.icon;
                 const isActive = activeSection === item.id;
+                const hasOrderBadge = item.id === "orders" && newOrderCount > 0;
                 return (
                   <button
                     key={item.id}
                     type="button"
+                    data-ocid={`admin.nav.${item.id}.link`}
                     onClick={() => {
                       setActiveSection(item.id);
                       setSidebarOpen(false);
+                      if (item.id === "orders") setNewOrderCount(0);
                     }}
                     className={`
                       w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
@@ -4440,8 +4944,15 @@ export default function AdminPanel() {
                     `}
                   >
                     <Icon className="w-4 h-4 shrink-0" />
-                    <span>{item.label}</span>
-                    {isActive && <ChevronRight className="w-3 h-3 ml-auto" />}
+                    <span className="flex-1 text-left">{item.label}</span>
+                    {hasOrderBadge && (
+                      <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                        {newOrderCount > 9 ? "9+" : newOrderCount}
+                      </span>
+                    )}
+                    {isActive && !hasOrderBadge && (
+                      <ChevronRight className="w-3 h-3 ml-auto" />
+                    )}
                   </button>
                 );
               })}

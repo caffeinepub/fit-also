@@ -1,63 +1,40 @@
-# Fit Also — V17
+# FitAlso
 
 ## Current State
-FitAlso is a luxury custom tailoring marketplace for India. V16 has been deployed with multiple fixes attempted but several issues remain. The app uses React + TypeScript frontend with Motoko backend on ICP.
+FitAlso is a luxury custom tailoring marketplace on ICP. The admin panel (`AdminPanel.tsx`) already exists with sections for Overview, Customers, Orders, Tailors, Products, etc. 
+
+**Current Problems:**
+1. **Products section** in admin panel reads from `localStorage` (tailor-linked listings) instead of the backend `getPlatformConfig()` → `products[]` array. Admin cannot add new products via the backend `adminAddProduct` API, and remove/update also not wired to backend (`adminDeleteProduct`, `adminUpdateProduct`).
+2. **Orders section** — `getAllExtendedOrders()` backend call exists but only runs once on mount. No 10-second polling. Orders from backend may not appear immediately.
+3. **Order status update** — `updateExtendedOrderStatus` is partially wired but the admin detail dialog doesn't show full customer info (phone, alt phone, address, measurements) clearly.
+4. **Real-time new order alert** — admin has no visual indicator when a new order arrives during their session.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Bottom nav must have exactly 5 items: Home | Search | Cart | Orders | Profile (with cart badge)
-- Slider must auto-slide Right→Left every 3 seconds, smooth CSS transition, finger swipe support, tap opens product
-- Slider theme: Black + Silver + Dark grey (no red/purple/pink/blue/green)
-- Notifications must appear from TOP-CENTER, auto-hide after 2 seconds
-- "Why Choose Fit Also?" 4-card section at very bottom of Settings page (already present, keep it)
-- Measurement required check — block order if no measurement selected and savedMeasurements is empty
-- City field in checkout: free-text input (any India city, not limited dropdown)
-- Landmark/Near Place field added to checkout address
+- **Admin Products — Add Product form**: Button "Add New Product" opens a dialog. Form fields: Title, Category, Description, Price, Image (file upload via ExternalBlob/blob-storage). Calls `adminAddProduct()` on submit.
+- **Admin Products — Backend product listing**: Load products from `getPlatformConfig()` → `products[]` instead of localStorage tailor listings. Show all products with image, title, category, price.
+- **Admin Products — Edit product**: Edit button on each product card calls `adminUpdateProduct()`.
+- **Admin Products — Delete/Remove product**: Trash icon calls `adminDeleteProduct(productId)` with soft-delete (sets `isDeleted: true` via `adminUpdateProduct`).
+- **Admin Orders — 10-second polling**: Auto-refresh `getAllExtendedOrders()` every 10 seconds while admin is on the Orders tab. New order badge/toast appears if count increases.
+- **Admin Orders — Full detail view**: Order detail dialog shows: Customer Name, Phone, Alt Phone, full Delivery Address (house, area, city, state, pin), Product, Category, Price, Payment Mode, Order Date, Measurements (parsed from `measurementsJson`), 8-stage status tracker visual, Admin Notes field, Change Status dropdown.
+- **New order notification badge**: When admin is logged in and a new order arrives (detected via polling), show a red badge on the Orders nav item and a top toast "New order received!"
 
 ### Modify
-- **Header**: Remove Search and Cart icons from top-right. Keep ONLY Profile icon on right. Logo — remove `mixBlendMode: multiply` (it causes white issues), instead use `style={{ background: 'transparent' }}` only. Keep logo left-shifted, "FIT ALSO" silver text below logo.
-- **BottomNav**: Completely rebuild to exactly 5 items: Home, Search, Cart (with badge count), Orders, Profile. Remove Fabrics tab. Remove Custom Order tab. Cart badge must show in bottom nav.
-- **Slider (HeroBanner)**: Replace simple fade/crossfade with proper CSS translateX slide animation. Direction: right to left. Auto every 3 seconds. Touch/swipe support. Tap anywhere → navigate to /catalog. Colors: use dark/charcoal/silver gradient backgrounds only.
-- **Cart remove**: Already instant via useCart hook — verify it works and add optimistic UI
-- **Checkout Place Order button**: Already at `bottom: calc(56px + env(safe-area-inset-bottom))` — increase to `calc(64px + env(safe-area-inset-bottom, 0px))` for extra safety
-- **Cart Checkout button**: Already at `bottom-14` — keep as is but ensure it doesn't overlap bottom nav
-- **Dark mode**: Ensure `bg-background` and `text-foreground` are used everywhere (not hardcoded `bg-white`/`text-black`). Key places: HomePage category section uses `bg-white` — change to `bg-background`. Featured section uses `bg-white` — change to `bg-background`. Trending section uses `bg-white` — change to `bg-background`. Footer uses `bg-gray-900` which is fine.
-- **Invoice (OrderDetailPage/OrderConfirmationPage)**: Fix to show actual totalPrice, not ₹0. GST = FREE/₹0.
-- **Fabric tab in BottomNav**: Remove completely
-- **Desktop header nav**: Remove "Fabrics" and "कपड़े" links
-- **Category row on HomePage**: Remove the "कपड़े/Fabrics" category item
-- **Top-right icons**: Only Profile icon remains (Search + Cart moved to BottomNav)
-- **Sonner Toaster position**: Change to `position="top-center"` with duration 2000ms
-- **Cart badge**: In BottomNav Cart item, show red badge with white text for count
+- **ProductsSection component**: Replace localStorage-based listing load with backend `getPlatformConfig()` call. Wire all CRUD operations to backend APIs.
+- **OrdersSection component**: Add `setInterval` polling (10s) on top of existing backend fetch. Enhance order detail dialog with full fields.
 
 ### Remove
-- Search icon from Header top-right
-- Cart icon from Header top-right  
-- Fabric/Fabrics from BottomNav
-- Fabric/Fabrics from desktop header nav
-- Fabric/Fabrics from HomePage category row
-- `mixBlendMode: multiply` from logo (causes white issues)
-- "Made with Caffeine" or any framework credits (already removed, keep removed)
+- Admin Products reading from localStorage tailor listings (old code path).
 
 ## Implementation Plan
-
-1. **Header.tsx** — Remove Search and Cart buttons. Keep only Profile (and Admin shield). Remove mixBlendMode from logo img. Keep banner background, logo left, FIT ALSO silver text.
-
-2. **BottomNav.tsx** — Complete rebuild: 5 items = Home, Search, Cart (badge), Orders, Profile. Cart badge shows totalItems count. Search goes to /catalog. Orders goes to /orders. Profile goes to /settings.
-
-3. **HomePage.tsx HeroBanner** — Rebuild slider with CSS translateX transform: `transform: translateX(-${activeIndex * 100}%)` on inner track. Touch events for swipe. Auto-slide every 3 seconds resets on touch. Slide colors: dark charcoal/silver/gunmetal gradients.
-
-4. **HomePage.tsx categories** — Remove Fabrics category from CATEGORIES_HI and CATEGORIES_EN arrays.
-
-5. **HomePage.tsx sections** — Change all `bg-white` to `bg-background` for dark mode support.
-
-6. **Header.tsx desktop nav** — Remove Fabrics/कपड़े nav link.
-
-7. **Sonner Toaster** — In App.tsx, set `<Toaster position="top-center" duration={2000} />`.
-
-8. **CheckoutPage.tsx** — Increase bottom offset of Place Order button. Add Landmark field to address form. City remains free-text input (already is). Add measurement validation: if savedMeasurements.length === 0, show warning but don't block (user may be first time). If savedMeasurements.length > 0 and nothing selected, block.
-
-9. **index.css / dark mode** — Ensure CSS variables for dark mode are comprehensive. All `bg-white` in components → `bg-background`.
-
-10. **OrderDetailPage / OrderConfirmationPage** — Fix invoice to show actual totalPrice. GST row shows FREE.
+1. In `AdminPanel.tsx`, update `ProductsSection`:
+   - Use `useActor` + `useQuery` to call `getPlatformConfig()` and extract `products` array
+   - Render product cards with image (ExternalBlob `getDirectURL()`), title, category, price
+   - Add "Add New Product" button → dialog with form (title, category, description, price, image upload)
+   - On add: call `actor.adminAddProduct(product)` then refetch
+   - On edit: call `actor.adminUpdateProduct(product)` then refetch
+   - On delete: call `actor.adminUpdateProduct({...product, isDeleted: true})` (soft delete) then refetch
+2. In `OrdersSection`, add `useEffect` with `setInterval(10000)` that re-fetches `getAllExtendedOrders()`. Track previous count, show toast + badge on new orders.
+3. Enhance backend order detail dialog to show all fields: customer phone, alt phone, full address breakdown, measurements parsed from JSON, 8-stage visual tracker, admin notes input.
+4. Add `newOrderCount` state to `AdminPanel` main component, pass badge count to Orders nav item.

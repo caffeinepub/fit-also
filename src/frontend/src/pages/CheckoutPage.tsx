@@ -236,16 +236,40 @@ export function CheckoutPage() {
       toast.error("वैध 6-अंकीय पिन कोड दर्ज करें");
       return false;
     }
-    if (!/^\+?[\d\s-]{10,}$/.test(address.phone)) {
-      toast.error("वैध फ़ोन नंबर दर्ज करें");
+    if (!/^\d{10}$/.test(address.phone.replace(/\s/g, ""))) {
+      toast.error(
+        language === "hi"
+          ? "वैध 10-अंकीय मोबाइल नंबर दर्ज करें"
+          : "Enter a valid 10-digit mobile number",
+      );
+      return false;
+    }
+    if (
+      address.altPhone.trim() &&
+      !/^\d{10}$/.test(address.altPhone.replace(/\s/g, ""))
+    ) {
+      toast.error(
+        language === "hi"
+          ? "वैकल्पिक नंबर भी 10 अंकों का होना चाहिए"
+          : "Alternate phone must also be 10 digits",
+      );
       return false;
     }
     if (checkoutItems.length === 0) {
       toast.error("कोई आइटम नहीं है");
       return false;
     }
-    // Block order if measurements are saved but none selected
-    if (savedMeasurements.length > 0 && !selectedMeasurementId) {
+    // Always require measurement — block if no measurements saved at all
+    if (savedMeasurements.length === 0) {
+      toast.error(
+        language === "hi"
+          ? "ऑर्डर देने से पहले माप सेव करें — Settings > Measurements में जाएं"
+          : "Please save your measurements first — go to Settings > Measurements",
+      );
+      return false;
+    }
+    // Block order if measurements saved but none selected
+    if (!selectedMeasurementId) {
       toast.error(
         language === "hi"
           ? "कृपया माप प्रोफ़ाइल चुनें — ऑर्डर के लिए माप आवश्यक है"
