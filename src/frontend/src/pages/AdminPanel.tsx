@@ -4135,6 +4135,12 @@ function PlatformSettingsSection() {
   const [platformName, setPlatformName] = useState("Fit Also");
   const [saved, setSaved] = useState(false);
 
+  // Razorpay keys state
+  const [rzpKeyId, setRzpKeyId] = useState("");
+  const [rzpKeySecret, setRzpKeySecret] = useState("");
+  const [showSecret, setShowSecret] = useState(false);
+  const [rzpSaved, setRzpSaved] = useState(false);
+
   useEffect(() => {
     try {
       const mm = JSON.parse(
@@ -4146,8 +4152,29 @@ function PlatformSettingsSection() {
         Number(localStorage.getItem("adminCommissionRate") || "20"),
       );
       setPlatformName(localStorage.getItem("adminPlatformName") || "Fit Also");
+
+      // Load Razorpay keys
+      setRzpKeyId(localStorage.getItem("rzp_key_id") || "");
+      setRzpKeySecret(localStorage.getItem("rzp_key_secret") || "");
     } catch {}
   }, []);
+
+  const saveRazorpayKeys = () => {
+    if (!rzpKeyId.trim()) {
+      toast.error("Key ID khali hai — pehle Key ID daalo");
+      return;
+    }
+    localStorage.setItem("rzp_key_id", rzpKeyId.trim());
+    localStorage.setItem("rzp_key_secret", rzpKeySecret.trim());
+    logAdminAction(
+      "Updated Razorpay payment keys",
+      "settings",
+      `Key ID: ${rzpKeyId.trim().slice(0, 20)}...`,
+    );
+    setRzpSaved(true);
+    setTimeout(() => setRzpSaved(false), 3000);
+    toast.success("Razorpay keys save ho gayi! Online payment ab active hai.");
+  };
 
   const saveSettings = () => {
     try {
@@ -4333,6 +4360,83 @@ function PlatformSettingsSection() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Razorpay Payment Gateway */}
+      <Card className="border-0 shadow-md border-l-4 border-l-blue-500">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <IndianRupee className="w-5 h-5 text-blue-500" /> Razorpay Payment
+            Gateway
+          </CardTitle>
+          <CardDescription>
+            Yahan apni Razorpay API keys daalo — Online payment active ho
+            jaayegi
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {rzpKeyId && (
+            <div className="flex items-center gap-2 bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 rounded-lg px-3 py-2 text-sm font-medium">
+              <CheckCircle className="w-4 h-4" />
+              Razorpay keys active hain — Online payment enabled
+            </div>
+          )}
+          <div>
+            <Label className="text-sm font-medium">Razorpay Key ID</Label>
+            <Input
+              value={rzpKeyId}
+              onChange={(e) => setRzpKeyId(e.target.value)}
+              placeholder="rzp_test_... ya rzp_live_..."
+              className="mt-1 font-mono text-sm"
+              data-ocid="settings.rzp_key_id.input"
+              autoComplete="off"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Razorpay Dashboard → Settings → API Keys → Key ID
+            </p>
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Razorpay Key Secret</Label>
+            <div className="relative mt-1">
+              <Input
+                value={rzpKeySecret}
+                onChange={(e) => setRzpKeySecret(e.target.value)}
+                placeholder="Key Secret daalo..."
+                type={showSecret ? "text" : "password"}
+                className="font-mono text-sm pr-20"
+                data-ocid="settings.rzp_key_secret.input"
+                autoComplete="new-password"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 text-xs"
+                onClick={() => setShowSecret((s) => !s)}
+              >
+                {showSecret ? "Hide" : "Show"}
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Razorpay Dashboard → Settings → API Keys → Key Secret
+            </p>
+          </div>
+          <Button
+            onClick={saveRazorpayKeys}
+            className="w-full sm:w-auto"
+            data-ocid="settings.rzp_save.button"
+          >
+            {rzpSaved ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" /> Keys Save Ho Gayi!
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" /> Razorpay Keys Save Karo
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
       <Button onClick={saveSettings} className="w-full sm:w-auto">
         {saved ? (

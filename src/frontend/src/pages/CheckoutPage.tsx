@@ -160,6 +160,11 @@ export function CheckoutPage() {
   const [savedMeasurements, setSavedMeasurements] = useState<
     Array<{ id: string; name: string; measurements: Record<string, string> }>
   >([]);
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "ONLINE">("COD");
+
+  // Check if Razorpay keys are configured
+  const rzpKeyId = localStorage.getItem("rzp_key_id") || "";
+  const isRazorpayEnabled = !!rzpKeyId.trim();
 
   // Check for buyNow mode
   useEffect(() => {
@@ -280,10 +285,67 @@ export function CheckoutPage() {
     return true;
   };
 
-  const handlePlaceOrder = async () => {
+  const handleRazorpayPayment = async () => {
     if (!validate()) return;
+    const keyId = localStorage.getItem("rzp_key_id") || "";
+    if (!keyId) {
+      toast.error(
+        "Razorpay keys configure nahi hain — Admin se contact karein",
+      );
+      return;
+    }
     setLoading(true);
+    try {
+      // Dynamically load Razorpay script
+      await new Promise<void>((resolve, reject) => {
+        if ((window as any).Razorpay) {
+          resolve();
+          return;
+        }
+        const script = document.createElement("script");
+        script.src = "https://checkout.razorpay.com/v1/checkout.js";
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error("Razorpay load failed"));
+        document.body.appendChild(script);
+      });
 
+      const options = {
+        key: keyId,
+        amount: checkoutTotal * 100, // in paise
+        currency: "INR",
+        name: "Fit Also",
+        description: checkoutItems[0]?.title || "Custom Tailoring Order",
+        prefill: {
+          name: address.name,
+          contact: address.phone,
+        },
+        theme: { color: "#1a1a2e" },
+        handler: async (response: any) => {
+          // Payment success — place order with online payment mode
+          await placeOrderInBackend("ONLINE", response.razorpay_payment_id);
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+          },
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", (resp: any) => {
+        toast.error(
+          `Payment failed: ${resp.error?.description || "Unknown error"}`,
+        );
+        setLoading(false);
+      });
+      rzp.open();
+    } catch {
+      toast.error("Online payment shuru nahi ho saka. COD try karein.");
+      setLoading(false);
+    }
+  };
+
+  const placeOrderInBackend = async (mode: string, paymentId?: string) => {
     try {
       const orderId = `FIT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       const firstItem = checkoutItems[0];
@@ -320,57 +382,56 @@ export function CheckoutPage() {
           .toISOString()
           .split("T")[0],
         orderDate: BigInt(Date.now()),
-        orderHash: "",
-        paymentMode: "COD",
+        orderHash: paymentId || "",
+        paymentMode: mode,
         category: firstItem.category,
         listingTitle: firstItem.title,
         totalPrice: checkoutTotal,
-        adminNotes: "",
+        adminNotes: paymentId ? `Razorpay Payment ID: ${paymentId}` : "",
       };
 
-      // Save to backend if available
       if (actor && identity) {
         try {
           await actor.placeExtendedOrder(order);
-        } catch (err) {
-          console.warn("Backend order save failed, using local fallback:", err);
-          // Store locally as fallback
-          try {
-            const existing = JSON.parse(
-              localStorage.getItem("allOrders") ?? "[]",
-            ) as ExtendedOrder[];
-            existing.push(order);
-            localStorage.setItem("allOrders", JSON.stringify(existing));
-          } catch {}
-        }
-      } else {
-        // Offline/demo mode fallback
-        try {
+        } catch {
           const existing = JSON.parse(
             localStorage.getItem("allOrders") ?? "[]",
           ) as ExtendedOrder[];
           existing.push(order);
           localStorage.setItem("allOrders", JSON.stringify(existing));
-        } catch {}
-      }
-
-      // Cleanup
-      if (isBuyNow) {
-        try {
-          sessionStorage.removeItem("buyNowItem");
-        } catch {}
+        }
       } else {
-        clearCart();
+        const existing = JSON.parse(
+          localStorage.getItem("allOrders") ?? "[]",
+        ) as ExtendedOrder[];
+        existing.push(order);
+        localStorage.setItem("allOrders", JSON.stringify(existing));
       }
 
-      toast.success("ऑर्डर सफलतापूर्वक दिया गया! 🎉");
+      if (isBuyNow) sessionStorage.removeItem("buyNowItem");
+      else clearCart();
+
+      toast.success(
+        mode === "ONLINE"
+          ? "Payment successful! Order placed!"
+          : "ऑर्डर सफलतापूर्वक दिया गया!",
+      );
       navigate({ to: "/order-confirmation/$orderId", params: { orderId } });
-    } catch (err) {
-      console.error("Order placement error:", err);
+    } catch {
       toast.error("ऑर्डर देने में समस्या हुई। फिर से कोशिश करें।");
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!validate()) return;
+    if (paymentMethod === "ONLINE") {
+      await handleRazorpayPayment();
+      return;
+    }
+    setLoading(true);
+    await placeOrderInBackend("COD");
   };
 
   // Empty cart guard
@@ -665,10 +726,26 @@ export function CheckoutPage() {
           icon={CreditCard}
         >
           <div className="space-y-3">
-            {/* COD - selected & active */}
-            <div className="flex items-center gap-3 p-3 rounded-xl border-2 border-primary bg-primary/5 cursor-pointer">
-              <div className="w-4 h-4 rounded-full border-2 border-primary flex items-center justify-center">
-                <div className="w-2 h-2 rounded-full bg-primary" />
+            {/* COD */}
+            <button
+              type="button"
+              className={cn(
+                "w-full flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all text-left",
+                paymentMethod === "COD"
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/50",
+              )}
+              onClick={() => setPaymentMethod("COD")}
+            >
+              <div
+                className={cn(
+                  "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                  paymentMethod === "COD" ? "border-primary" : "border-border",
+                )}
+              >
+                {paymentMethod === "COD" && (
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                )}
               </div>
               <div className="flex items-center gap-2 flex-1">
                 <Truck className="w-4 h-4 text-primary" />
@@ -685,27 +762,73 @@ export function CheckoutPage() {
                   </p>
                 </div>
               </div>
-              <CheckCircle className="w-4 h-4 text-primary" />
-            </div>
+              {paymentMethod === "COD" && (
+                <CheckCircle className="w-4 h-4 text-primary" />
+              )}
+            </button>
 
-            {/* Online payment - coming soon */}
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30 opacity-60 cursor-not-allowed">
-              <div className="w-4 h-4 rounded-full border-2 border-border" />
-              <div className="flex items-center gap-2 flex-1">
-                <CreditCard className="w-4 h-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {language === "hi" ? "ऑनलाइन पेमेंट" : "Online Payment"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {language === "hi" ? "जल्द आ रहा है..." : "Coming Soon"}
-                  </p>
+            {/* Online payment - Razorpay if configured, else coming soon */}
+            {isRazorpayEnabled ? (
+              <button
+                type="button"
+                className={cn(
+                  "w-full flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all text-left",
+                  paymentMethod === "ONLINE"
+                    ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30"
+                    : "border-border hover:border-blue-300",
+                )}
+                onClick={() => setPaymentMethod("ONLINE")}
+              >
+                <div
+                  className={cn(
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                    paymentMethod === "ONLINE"
+                      ? "border-blue-500"
+                      : "border-border",
+                  )}
+                >
+                  {paymentMethod === "ONLINE" && (
+                    <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  )}
                 </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <CreditCard className="w-4 h-4 text-blue-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {language === "hi"
+                        ? "ऑनलाइन पेमेंट (Razorpay)"
+                        : "Online Payment (Razorpay)"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === "hi"
+                        ? "UPI, Card, Net Banking, Wallet"
+                        : "UPI, Card, Net Banking, Wallet"}
+                    </p>
+                  </div>
+                </div>
+                {paymentMethod === "ONLINE" && (
+                  <CheckCircle className="w-4 h-4 text-blue-500" />
+                )}
+              </button>
+            ) : (
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30 opacity-60 cursor-not-allowed">
+                <div className="w-4 h-4 rounded-full border-2 border-border" />
+                <div className="flex items-center gap-2 flex-1">
+                  <CreditCard className="w-4 h-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {language === "hi" ? "ऑनलाइन पेमेंट" : "Online Payment"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === "hi" ? "जल्द आ रहा है..." : "Coming Soon"}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full border border-border">
+                  Soon
+                </span>
               </div>
-              <span className="text-xs font-semibold bg-muted text-muted-foreground px-2 py-0.5 rounded-full border border-border">
-                Soon
-              </span>
-            </div>
+            )}
 
             {/* Loyalty coins - disabled */}
             <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30 opacity-60 cursor-not-allowed">
@@ -764,7 +887,13 @@ export function CheckoutPage() {
             ) : (
               <>
                 <CheckCircle className="w-4 h-4" />
-                {language === "hi" ? "ऑर्डर दें (COD)" : "Place Order (COD)"}
+                {paymentMethod === "ONLINE"
+                  ? language === "hi"
+                    ? "ऑनलाइन पेमेंट करें"
+                    : "Pay Online"
+                  : language === "hi"
+                    ? "ऑर्डर दें (COD)"
+                    : "Place Order (COD)"}
               </>
             )}
           </button>
