@@ -21,6 +21,8 @@ import { useActor } from "../hooks/useActor";
 import { useCart } from "../hooks/useCart";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useLanguage } from "../hooks/useLanguage";
+import { useLoyaltyPoints } from "../hooks/useLoyaltyPoints";
+import type { MeasurementProfile } from "../types/measurements";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -152,15 +154,18 @@ export function CheckoutPage() {
   const { actor } = useActor();
   const { identity } = useInternetIdentity();
 
+  const { balance: loyaltyBalance } = useLoyaltyPoints();
+
   const [address, setAddress] = useState<AddressForm>(EMPTY_ADDRESS);
   const [loading, setLoading] = useState(false);
   const [buyNowItem, setBuyNowItem] = useState<BuyNowItem | null>(null);
   const [selectedMeasurementId, setSelectedMeasurementId] =
     useState<string>("");
   const [savedMeasurements, setSavedMeasurements] = useState<
-    Array<{ id: string; name: string; measurements: Record<string, string> }>
+    MeasurementProfile[]
   >([]);
   const [paymentMethod, setPaymentMethod] = useState<"COD" | "ONLINE">("COD");
+  const [redeemCoins, setRedeemCoins] = useState(false);
 
   // Check if Razorpay keys are configured
   const rzpKeyId = localStorage.getItem("rzp_key_id") || "";
@@ -177,19 +182,21 @@ export function CheckoutPage() {
     } catch {}
   }, []);
 
-  // Load saved measurement profiles from localStorage
+  // Load saved measurement profiles from localStorage (correct key from useMeasurements hook)
   useEffect(() => {
+    const principalId = identity?.getPrincipal().toString() ?? "anonymous";
+    const key = `fitAlso_measurements_${principalId}`;
     try {
-      const raw = localStorage.getItem("measurementProfiles");
+      const raw = localStorage.getItem(key);
       if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
+        const parsed = JSON.parse(raw) as MeasurementProfile[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
           setSavedMeasurements(parsed);
-          if (parsed.length > 0) setSelectedMeasurementId(parsed[0].id);
+          setSelectedMeasurementId(parsed[0].id);
         }
       }
     } catch {}
-  }, []);
+  }, [identity]);
 
   // Determine checkout items
   const isBuyNow = !!buyNowItem;
@@ -208,7 +215,9 @@ export function CheckoutPage() {
         price: i.listing.basePrice,
         category: i.listing.category,
       }));
-  const checkoutTotal = isBuyNow ? buyNowItem.listing.basePrice : totalPrice;
+  const baseTotal = isBuyNow ? buyNowItem.listing.basePrice : totalPrice;
+  const coinDiscount = redeemCoins && loyaltyBalance >= 1000 ? 2000 : 0;
+  const checkoutTotal = Math.max(0, baseTotal - coinDiscount);
 
   const setField =
     (field: keyof AddressForm) =>
@@ -356,8 +365,8 @@ export function CheckoutPage() {
         status: "Order Placed",
         measurementsJson: selectedMeasurementId
           ? JSON.stringify(
-              savedMeasurements.find((m) => m.id === selectedMeasurementId)
-                ?.measurements ?? {},
+              savedMeasurements.find((m) => m.id === selectedMeasurementId) ??
+                {},
             )
           : "{}",
         deliveryAddress: {
@@ -685,11 +694,27 @@ export function CheckoutPage() {
           icon={Ruler}
         >
           {savedMeasurements.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              {language === "hi"
-                ? "कोई सहेजा हुआ माप नहीं है — Settings में जाकर माप जोड़ें।"
-                : "No saved measurements — add them in Settings."}
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {language === "hi"
+                  ? "कोई सहेजा हुआ माप नहीं है।"
+                  : "No saved measurements found."}
+              </p>
+              <button
+                type="button"
+                data-ocid="checkout.measurements.button"
+                onClick={() =>
+                  navigate({
+                    to: "/dashboard/customer",
+                    search: { tab: "measurements" } as any,
+                  })
+                }
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-all"
+              >
+                <Ruler className="w-4 h-4" />
+                {language === "hi" ? "माप जोड़ें" : "Add Measurements"}
+              </button>
+            </div>
           ) : (
             <div className="space-y-2">
               {savedMeasurements.map((profile) => (
@@ -705,13 +730,17 @@ export function CheckoutPage() {
                     onChange={() => setSelectedMeasurementId(profile.id)}
                     className="w-4 h-4 accent-primary"
                   />
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">
                       {profile.name}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {Object.keys(profile.measurements || {}).length}{" "}
-                      {language === "hi" ? "माप" : "measurements"}
+                      {language === "hi" ? "छाती" : "Chest"}:{" "}
+                      {profile.chest || "—"} ·{" "}
+                      {language === "hi" ? "कमर" : "Waist"}:{" "}
+                      {profile.waist || "—"} ·{" "}
+                      {language === "hi" ? "ऊंचाई" : "Height"}:{" "}
+                      {profile.height || "—"}
                     </p>
                   </div>
                 </label>
@@ -830,26 +859,73 @@ export function CheckoutPage() {
               </div>
             )}
 
-            {/* Loyalty coins - disabled */}
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30 opacity-60 cursor-not-allowed">
-              <div className="w-4 h-4 rounded-full border-2 border-border" />
-              <div className="flex items-center gap-2 flex-1">
-                <Coins className="w-4 h-4 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">
-                    {language === "hi" ? "लॉयल्टी कॉइन्स" : "Loyalty Coins"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {language === "hi"
-                      ? "ऑनलाइन पेमेंट चालू होने पर उपलब्ध"
-                      : "Available when Online Payment is enabled"}
-                  </p>
+            {/* Loyalty coins — active when balance >= 1000 */}
+            {loyaltyBalance >= 1000 ? (
+              <button
+                type="button"
+                data-ocid="checkout.loyalty.toggle"
+                className={cn(
+                  "w-full flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all text-left",
+                  redeemCoins
+                    ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30"
+                    : "border-border hover:border-yellow-400",
+                )}
+                onClick={() => setRedeemCoins((prev) => !prev)}
+              >
+                <div
+                  className={cn(
+                    "w-4 h-4 rounded-full border-2 flex items-center justify-center",
+                    redeemCoins ? "border-yellow-500" : "border-border",
+                  )}
+                >
+                  {redeemCoins && (
+                    <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                  )}
                 </div>
+                <div className="flex items-center gap-2 flex-1">
+                  <Coins className="w-4 h-4 text-yellow-500" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      {language === "hi"
+                        ? "1000 कॉइन्स रिडीम करें = ₹2000 छूट"
+                        : "Redeem 1000 Coins = ₹2000 Discount"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === "hi"
+                        ? `आपके पास ${loyaltyBalance} कॉइन्स हैं`
+                        : `You have ${loyaltyBalance} coins`}
+                    </p>
+                  </div>
+                </div>
+                {redeemCoins && (
+                  <CheckCircle className="w-4 h-4 text-yellow-500" />
+                )}
+              </button>
+            ) : (
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border bg-muted/30">
+                <div className="w-4 h-4 rounded-full border-2 border-border" />
+                <div className="flex items-center gap-2 flex-1">
+                  <Coins className="w-4 h-4 text-yellow-500" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      {language === "hi" ? "लॉयल्टी कॉइन्स" : "Loyalty Coins"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {loyaltyBalance > 0
+                        ? language === "hi"
+                          ? `${loyaltyBalance} कॉइन्स — रिडीम के लिए ${1000 - loyaltyBalance} और चाहिए`
+                          : `${loyaltyBalance} coins — need ${1000 - loyaltyBalance} more to redeem`
+                        : language === "hi"
+                          ? "ऑनलाइन पेमेंट पर कॉइन्स कमाएं"
+                          : "Earn coins on online payments"}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-semibold text-yellow-600 bg-yellow-50 dark:bg-yellow-950/30 px-2 py-0.5 rounded-full border border-yellow-200">
+                  {loyaltyBalance} coins
+                </span>
               </div>
-              <span className="text-xs font-semibold text-muted-foreground">
-                0 coins
-              </span>
-            </div>
+            )}
           </div>
         </SectionCard>
       </div>
@@ -864,9 +940,19 @@ export function CheckoutPage() {
             <p className="text-xs text-muted-foreground">
               {language === "hi" ? "कुल" : "Total"}
             </p>
+            {coinDiscount > 0 && (
+              <p className="text-xs text-yellow-600 line-through">
+                ₹{baseTotal.toLocaleString("hi-IN")}
+              </p>
+            )}
             <p className="font-display font-bold text-primary text-lg">
               ₹{checkoutTotal.toLocaleString("hi-IN")}
             </p>
+            {coinDiscount > 0 && (
+              <p className="text-xs text-green-600">
+                -{language === "hi" ? "₹2000 कॉइन्स छूट" : "₹2000 coin discount"}
+              </p>
+            )}
           </div>
           <button
             type="button"

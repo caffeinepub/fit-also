@@ -92,9 +92,10 @@ import {
   XCircle,
 } from "lucide-react";
 import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ApprovalStatus, ExternalBlob } from "../backend";
+import type { ExtendedOrder as BackendExtendedOrder } from "../backend";
 import { AdminCustomizationPanel } from "../components/AdminCustomizationPanel";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
@@ -951,15 +952,14 @@ function OrdersSection({
   const { actor } = useActor();
   const { identity } = useInternetIdentity();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [backendOrders, setBackendOrders] = useState<
-    import("../backend").ExtendedOrder[]
-  >([]);
+  const [backendOrders, setBackendOrders] = useState<BackendExtendedOrder[]>(
+    [],
+  );
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
-  const [viewBackendOrder, setViewBackendOrder] = useState<
-    import("../backend").ExtendedOrder | null
-  >(null);
+  const [viewBackendOrder, setViewBackendOrder] =
+    useState<BackendExtendedOrder | null>(null);
   const [search, setSearch] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [adminNote, setAdminNote] = useState("");
@@ -970,6 +970,24 @@ function OrdersSection({
     loadOrders();
   }, [loadOrders]);
 
+  // Load allOrders from localStorage as ExtendedOrders for offline fallback
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("allOrders");
+      if (raw) {
+        const extOrders = JSON.parse(raw) as BackendExtendedOrder[];
+        if (Array.isArray(extOrders) && extOrders.length > 0) {
+          setBackendOrders((prev) => {
+            // Merge: add any extOrders not already in backendOrders
+            const existingIds = new Set(prev.map((o) => o.id));
+            const newOnes = extOrders.filter((o) => !existingIds.has(o.id));
+            return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+          });
+        }
+      }
+    } catch {}
+  }, []);
+
   // Initial backend fetch + 10-second polling
   useEffect(() => {
     if (!actor || !identity) return;
@@ -977,17 +995,28 @@ function OrdersSection({
     const fetchOrders = async () => {
       try {
         const result = await actor.getAllExtendedOrders();
-        setBackendOrders(result);
+        // Also merge localStorage allOrders to catch COD orders
+        let merged: BackendExtendedOrder[] = result;
+        try {
+          const raw = localStorage.getItem("allOrders");
+          if (raw) {
+            const localExt = JSON.parse(raw) as BackendExtendedOrder[];
+            const existingIds = new Set(result.map((o) => o.id));
+            const extras = localExt.filter((o) => !existingIds.has(o.id));
+            merged = [...result, ...extras];
+          }
+        } catch {}
+        setBackendOrders(merged);
         // Detect new orders vs previous count
         if (
           prevOrderCountRef.current > 0 &&
-          result.length > prevOrderCountRef.current
+          merged.length > prevOrderCountRef.current
         ) {
-          const newCount = result.length - prevOrderCountRef.current;
+          const newCount = merged.length - prevOrderCountRef.current;
           toast(`🔔 New order received! (${newCount} new)`, { duration: 5000 });
           onNewOrders?.(newCount);
         }
-        prevOrderCountRef.current = result.length;
+        prevOrderCountRef.current = merged.length;
       } catch {}
     };
 
@@ -1198,7 +1227,7 @@ function OrdersSection({
                     </TableCell>
                   </TableRow>
                 ) : hasBackendOrders ? (
-                  (displayOrders as import("../backend").ExtendedOrder[]).map(
+                  (displayOrders as BackendExtendedOrder[]).map(
                     (order, idx) => (
                       <TableRow
                         key={order.id}
@@ -4453,7 +4482,7 @@ function PlatformSettingsSection() {
 
 // ─── Customer Analytics Section ───────────────────────────────────────────────
 
-function CustomerAnalyticsSection() {
+const CustomerAnalyticsSection = memo(function CustomerAnalyticsSection() {
   const allOrders = getAllOrders();
   const allProfiles = getAllUserProfiles();
 
@@ -4727,7 +4756,7 @@ function CustomerAnalyticsSection() {
       </Card>
     </div>
   );
-}
+});
 
 // ─── Main AdminPanel Component ────────────────────────────────────────────────
 

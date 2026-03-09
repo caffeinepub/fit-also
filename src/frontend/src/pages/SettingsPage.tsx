@@ -345,7 +345,12 @@ export function SettingsPage() {
             icon={Ruler}
             label={bi(language, "मेरे माप", "My Measurements")}
             value={bi(language, "माप प्रोफ़ाइल", "Measurement profiles")}
-            onClick={() => navigate({ to: "/dashboard/customer" })}
+            onClick={() =>
+              navigate({
+                to: "/dashboard/customer",
+                search: { tab: "measurements" } as any,
+              })
+            }
           />
         </SectionCard>
 

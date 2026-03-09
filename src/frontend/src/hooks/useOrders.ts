@@ -1,4 +1,5 @@
 import { useCallback, useState } from "react";
+import type { ExtendedOrder } from "../backend";
 import type { CustomizationOptions } from "../types/catalog";
 import type { MeasurementProfile } from "../types/measurements";
 import type { Order, OrderStatus } from "../types/order";
@@ -83,7 +84,57 @@ export function useOrders() {
 
   const getOrder = useCallback(
     (orderId: string): Order | undefined => {
-      return orders.find((o) => o.id === orderId);
+      // First check per-user orders
+      const local = orders.find((o) => o.id === orderId);
+      if (local) return local;
+
+      // Fallback: check allOrders localStorage (ExtendedOrder from CheckoutPage)
+      try {
+        const raw = localStorage.getItem("allOrders");
+        if (raw) {
+          const allExt = JSON.parse(raw) as ExtendedOrder[];
+          const ext = allExt.find((o) => o.id === orderId);
+          if (ext) {
+            // Convert ExtendedOrder to Order shape
+            const converted: Order = {
+              id: ext.id,
+              customerId: ext.customerPrincipal ?? "",
+              tailorId: ext.tailorId ?? "",
+              listingId: ext.id,
+              listingTitle: ext.listingTitle ?? "",
+              category: ext.category ?? "",
+              customization: (() => {
+                try {
+                  return JSON.parse(ext.customizationJson || "{}");
+                } catch {
+                  return {};
+                }
+              })(),
+              measurementSnapshot: (() => {
+                try {
+                  return JSON.parse(ext.measurementsJson || "{}");
+                } catch {
+                  return undefined;
+                }
+              })(),
+              price: ext.totalPrice ?? 0,
+              status: ext.status ?? "Order Placed",
+              createdAt: Number(ext.orderDate ?? Date.now()),
+              updatedAt: Number(ext.orderDate ?? Date.now()),
+              tailorName: "",
+              customerName: ext.customerName,
+              customerPhone: ext.customerPhone,
+              customerAltPhone: ext.customerAltPhone,
+              deliveryAddress: ext.deliveryAddress,
+              paymentMode: ext.paymentMode,
+              estimatedDeliveryDate: ext.estimatedDeliveryDate,
+              adminNotes: ext.adminNotes,
+            } as unknown as Order;
+            return converted;
+          }
+        }
+      } catch {}
+      return undefined;
     },
     [orders],
   );

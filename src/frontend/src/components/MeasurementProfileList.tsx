@@ -17,7 +17,8 @@ export function MeasurementProfileList() {
   const { t } = useLanguage();
   const { profiles, addProfile, updateProfile, deleteProfile } =
     useMeasurements();
-  const [showForm, setShowForm] = useState(false);
+  // Auto-open add form if no profiles exist yet
+  const [showForm, setShowForm] = useState(() => profiles.length === 0);
   const [editingProfile, setEditingProfile] =
     useState<MeasurementProfile | null>(null);
 
@@ -50,10 +51,21 @@ export function MeasurementProfileList() {
 
       {profiles.length === 0 ? (
         <LuxuryCard className="p-8 text-center">
-          <Ruler className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground text-sm">
-            No measurement profiles yet. Add one to get started.
+          <Ruler className="h-10 w-10 text-primary/60 mx-auto mb-3" />
+          <p className="text-muted-foreground text-sm mb-3">
+            {"No measurement profiles yet."}
           </p>
+          <LuxuryButton
+            variant="primary"
+            size="sm"
+            onClick={() => {
+              setEditingProfile(null);
+              setShowForm(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
+            {t("meas.add")}
+          </LuxuryButton>
         </LuxuryCard>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">

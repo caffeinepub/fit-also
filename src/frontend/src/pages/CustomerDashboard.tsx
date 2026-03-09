@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { Package, Ruler, ShoppingBag, Star, User } from "lucide-react";
 import React, { useState } from "react";
 import { LoyaltyPointsCard } from "../components/LoyaltyPointsCard";
@@ -19,6 +19,10 @@ export function CustomerDashboard() {
   const { data: profile } = useGetCallerUserProfile();
   const { activeOrders, orders } = useOrders();
 
+  // Read ?tab= URL param to set default tab
+  const search = useSearch({ strict: false }) as Record<string, string>;
+  const searchTab = (search?.tab as string) || "active-orders";
+
   return (
     <div className="container mx-auto px-4 py-10 animate-fade-in">
       <div className="mb-8">
@@ -31,7 +35,7 @@ export function CustomerDashboard() {
         </h1>
       </div>
 
-      <Tabs defaultValue="active-orders">
+      <Tabs defaultValue={searchTab}>
         <TabsList className="mb-6 flex-wrap h-auto gap-1">
           <TabsTrigger
             value="active-orders"

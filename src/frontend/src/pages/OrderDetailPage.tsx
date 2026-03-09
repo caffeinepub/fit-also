@@ -30,12 +30,27 @@ export function OrderDetailPage() {
   const localOrder = getOrder(id);
   const [extOrder, setExtOrder] = useState<ExtendedOrder | null>(null);
 
+  // Try actor first, then fall back to allOrders in localStorage
   useEffect(() => {
+    // Check allOrders localStorage for ExtendedOrder (CheckoutPage saves here)
+    try {
+      const raw = localStorage.getItem("allOrders");
+      if (raw) {
+        const allExt = JSON.parse(raw) as ExtendedOrder[];
+        const found = allExt.find((o) => o.id === id);
+        if (found) {
+          setExtOrder(found);
+          return;
+        }
+      }
+    } catch {}
+
+    // Try backend actor
     if (!actor) return;
     actor
       .getOrderById(id)
       .then((result) => {
-        if (result) setExtOrder(result);
+        if (result) setExtOrder(result as unknown as ExtendedOrder);
       })
       .catch(() => {});
   }, [actor, id]);
@@ -226,70 +241,169 @@ export function OrderDetailPage() {
           </LuxuryCard>
         )}
 
-        {/* Customization */}
-        {localOrder?.customization && (
-          <LuxuryCard className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Palette className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-lg font-semibold">
-                Customization
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {Object.entries(localOrder.customization).map(([key, value]) => (
-                <div key={key} className="p-3 rounded-lg bg-muted">
-                  <p className="text-xs text-muted-foreground capitalize">
-                    {key.replace(/([A-Z])/g, " $1").trim()}
-                  </p>
-                  <p className="font-medium text-sm capitalize mt-0.5">
-                    {value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </LuxuryCard>
-        )}
+        {/* Customization — from extOrder or localOrder */}
+        {(() => {
+          let customizationData: Record<string, string> | null = null;
+          if (extOrder?.customizationJson) {
+            try {
+              const parsed = JSON.parse(extOrder.customizationJson);
+              if (parsed && Object.keys(parsed).length > 0)
+                customizationData = parsed;
+            } catch {}
+          } else if (localOrder?.customization) {
+            customizationData = localOrder.customization as unknown as Record<
+              string,
+              string
+            >;
+          }
+          if (!customizationData) return null;
+          return (
+            <LuxuryCard className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Palette className="h-5 w-5 text-primary" />
+                <h2 className="font-serif text-lg font-semibold">
+                  Customization
+                </h2>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {Object.entries(customizationData).map(([key, value]) => (
+                  <div key={key} className="p-3 rounded-lg bg-muted">
+                    <p className="text-xs text-muted-foreground capitalize">
+                      {key.replace(/([A-Z])/g, " $1").trim()}
+                    </p>
+                    <p className="font-medium text-sm capitalize mt-0.5">
+                      {String(value)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </LuxuryCard>
+          );
+        })()}
 
-        {/* Measurements */}
-        {localOrder?.measurementSnapshot && (
-          <LuxuryCard className="p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Ruler className="h-5 w-5 text-primary" />
-              <h2 className="font-serif text-lg font-semibold">
-                Measurements — {localOrder.measurementSnapshot.name}
-              </h2>
-            </div>
-            <div className="grid grid-cols-4 gap-3">
-              {[
-                { label: "Chest", val: localOrder.measurementSnapshot.chest },
-                { label: "Waist", val: localOrder.measurementSnapshot.waist },
-                { label: "Hips", val: localOrder.measurementSnapshot.hips },
-                {
-                  label: "Shoulder",
-                  val: localOrder.measurementSnapshot.shoulderWidth,
-                },
-                {
-                  label: "Sleeve",
-                  val: localOrder.measurementSnapshot.sleeveLength,
-                },
-                { label: "Inseam", val: localOrder.measurementSnapshot.inseam },
-                {
-                  label: "Neck",
-                  val: localOrder.measurementSnapshot.neckCircumference,
-                },
-                { label: "Height", val: localOrder.measurementSnapshot.height },
-              ].map((m) => (
-                <div
-                  key={m.label}
-                  className="text-center p-2 rounded-lg bg-muted"
-                >
-                  <div className="font-semibold text-sm">{m.val} cm</div>
-                  <div className="text-xs text-muted-foreground">{m.label}</div>
-                </div>
-              ))}
-            </div>
-          </LuxuryCard>
-        )}
+        {/* Measurements — from extOrder or localOrder */}
+        {(() => {
+          // Try extOrder measurementsJson first
+          if (extOrder?.measurementsJson) {
+            try {
+              const meas = JSON.parse(extOrder.measurementsJson);
+              if (
+                meas &&
+                typeof meas === "object" &&
+                Object.keys(meas).length > 0
+              ) {
+                const isProfile =
+                  "chest" in meas || "waist" in meas || "height" in meas;
+                const entries = isProfile
+                  ? [
+                      { label: "Name", val: meas.name },
+                      { label: "Chest", val: meas.chest },
+                      { label: "Waist", val: meas.waist },
+                      { label: "Hips", val: meas.hips },
+                      { label: "Shoulder", val: meas.shoulderWidth },
+                      { label: "Sleeve", val: meas.sleeveLength },
+                      { label: "Inseam", val: meas.inseam },
+                      { label: "Neck", val: meas.neckCircumference },
+                      { label: "Height", val: meas.height },
+                    ].filter(
+                      (e) =>
+                        e.val !== undefined && e.val !== null && e.val !== "",
+                    )
+                  : Object.entries(meas).map(([k, v]) => ({
+                      label: k,
+                      val: v as string | number,
+                    }));
+                return (
+                  <LuxuryCard className="p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Ruler className="h-5 w-5 text-primary" />
+                      <h2 className="font-serif text-lg font-semibold">
+                        {language === "hi" ? "माप" : "Measurements"}
+                        {meas.name ? ` — ${meas.name}` : ""}
+                      </h2>
+                    </div>
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                      {entries.map((m) => (
+                        <div
+                          key={m.label}
+                          className="text-center p-2 rounded-lg bg-muted"
+                        >
+                          <div className="font-semibold text-sm">
+                            {m.val}
+                            {typeof m.val === "number" ? " cm" : ""}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {m.label}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </LuxuryCard>
+                );
+              }
+            } catch {}
+          }
+
+          // Fallback to localOrder measurementSnapshot
+          if (!localOrder?.measurementSnapshot) return null;
+          return (
+            <LuxuryCard className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Ruler className="h-5 w-5 text-primary" />
+                <h2 className="font-serif text-lg font-semibold">
+                  Measurements — {(localOrder.measurementSnapshot as any).name}
+                </h2>
+              </div>
+              <div className="grid grid-cols-4 gap-3">
+                {[
+                  {
+                    label: "Chest",
+                    val: (localOrder.measurementSnapshot as any).chest,
+                  },
+                  {
+                    label: "Waist",
+                    val: (localOrder.measurementSnapshot as any).waist,
+                  },
+                  {
+                    label: "Hips",
+                    val: (localOrder.measurementSnapshot as any).hips,
+                  },
+                  {
+                    label: "Shoulder",
+                    val: (localOrder.measurementSnapshot as any).shoulderWidth,
+                  },
+                  {
+                    label: "Sleeve",
+                    val: (localOrder.measurementSnapshot as any).sleeveLength,
+                  },
+                  {
+                    label: "Inseam",
+                    val: (localOrder.measurementSnapshot as any).inseam,
+                  },
+                  {
+                    label: "Neck",
+                    val: (localOrder.measurementSnapshot as any)
+                      .neckCircumference,
+                  },
+                  {
+                    label: "Height",
+                    val: (localOrder.measurementSnapshot as any).height,
+                  },
+                ].map((m) => (
+                  <div
+                    key={m.label}
+                    className="text-center p-2 rounded-lg bg-muted"
+                  >
+                    <div className="font-semibold text-sm">{m.val} cm</div>
+                    <div className="text-xs text-muted-foreground">
+                      {m.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </LuxuryCard>
+          );
+        })()}
 
         {/* Dates */}
         <LuxuryCard className="p-6">
