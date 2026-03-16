@@ -58,6 +58,29 @@ actor {
     backgroundImage : ?Blob.ExternalBlob;
   };
 
+  // Legacy types for stable variable migration compatibility
+  type ProductLegacy = {
+    id : Text;
+    title : Text;
+    category : Text;
+    description : Text;
+    price : Float;
+    image : Blob.ExternalBlob;
+    tailorId : Text;
+    customizationOptions : CustomizationOptions;
+    isDeleted : Bool;
+  };
+
+  type PlatformConfigLegacy = {
+    products : [ProductLegacy];
+    fabrics : [Fabric];
+    colors : [Color];
+    workTypes : [WorkType];
+    cities : [City];
+    promotions : [Promotion];
+    banners : [Blob.ExternalBlob];
+  };
+
   type PlatformConfig = {
     products : [Product];
     fabrics : [Fabric];
@@ -68,16 +91,29 @@ actor {
     banners : [Blob.ExternalBlob];
   };
 
+  type ProductReview = {
+    id : Text;
+    userName : Text;
+    rating : Nat;
+    comment : Text;
+    createdAt : Int;
+  };
+
   type Product = {
     id : Text;
     title : Text;
     category : Text;
     description : Text;
     price : Float;
+    originalPrice : ?Float;
+    discountPrice : ?Float;
     image : Blob.ExternalBlob;
+    additionalImages : ?[Blob.ExternalBlob];
+    videoUrl : ?Text;
     tailorId : Text;
     customizationOptions : CustomizationOptions;
     isDeleted : Bool;
+    reviews : ?[ProductReview];
   };
 
   type CustomizationOptions = {
@@ -261,7 +297,8 @@ actor {
   let tailorProfiles = Map.empty<Text, TailorProfile>();
   let carts = Map.empty<Principal, List.List<CartItem>>();
   let coinLedgers = Map.empty<Text, List.List<CoinLedger>>();
-  var platformConfig : ?PlatformConfig = null;
+  stable var platformConfig : ?PlatformConfigLegacy = null; // legacy: stable compat
+  stable var platformConfigData : ?PlatformConfig = null; // active config with new fields
   let notifications = List.empty<Notification>();
 
   // Approval Checks - Required
@@ -371,14 +408,14 @@ actor {
     if (not (UserApproval.isApproved(approvalState, caller) or AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only approved users can perform this action");
     };
-    platformConfig;
+    platformConfigData;
   };
 
   public shared ({ caller }) func updatePlatformConfig(config : PlatformConfig) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
-    platformConfig := ?config;
+    platformConfigData := ?config;
   };
 
   // Notification Management
@@ -559,7 +596,7 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
+    switch (platformConfigData) {
       case (null) { Runtime.trap("Platform config not found") };
       case (?config) {
         let updatedProducts = config.products.map(
@@ -574,7 +611,7 @@ actor {
         let updatedConfig = {
           config with products = updatedProducts;
         };
-        platformConfig := ?updatedConfig;
+        platformConfigData := ?updatedConfig;
       };
     };
   };
@@ -584,19 +621,15 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
-      case (null) { Runtime.trap("Platform config not found") };
-      case (?config) {
-        let filteredProducts = config.products.filter(
-          func(p) { p.id != product.id }
-        );
-        let updatedProducts = filteredProducts.concat([product]);
-        let updatedConfig = {
-          config with products = updatedProducts;
-        };
-        platformConfig := ?updatedConfig;
-      };
+    let config = switch (platformConfigData) {
+      case (null) { { products = []; fabrics = []; colors = []; workTypes = []; cities = []; promotions = []; banners = [] } };
+      case (?c) { c };
     };
+    let filteredProducts = config.products.filter(
+      func(p) { p.id != product.id }
+    );
+    let updatedProducts = filteredProducts.concat([product]);
+    platformConfigData := ?{ config with products = updatedProducts };
   };
 
   public shared ({ caller }) func adminAddProduct(product : Product) : async () {
@@ -604,16 +637,12 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
-      case (null) { Runtime.trap("Platform config not found") };
-      case (?config) {
-        let updatedProducts = config.products.concat([product]);
-        let updatedConfig = {
-          config with products = updatedProducts;
-        };
-        platformConfig := ?updatedConfig;
-      };
+    let config = switch (platformConfigData) {
+      case (null) { { products = []; fabrics = []; colors = []; workTypes = []; cities = []; promotions = []; banners = [] } };
+      case (?c) { c };
     };
+    let updatedProducts = config.products.concat([product]);
+    platformConfigData := ?{ config with products = updatedProducts };
   };
 
   public shared ({ caller }) func adminAddFabric(fabric : Fabric) : async () {
@@ -621,14 +650,14 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
+    switch (platformConfigData) {
       case (null) { Runtime.trap("Platform config not found") };
       case (?config) {
         let updatedFabrics = config.fabrics.concat([fabric]);
         let updatedConfig = {
           config with fabrics = updatedFabrics;
         };
-        platformConfig := ?updatedConfig;
+        platformConfigData := ?updatedConfig;
       };
     };
   };
@@ -638,14 +667,14 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
+    switch (platformConfigData) {
       case (null) { Runtime.trap("Platform config not found") };
       case (?config) {
         let updatedColors = config.colors.concat([color]);
         let updatedConfig = {
           config with colors = updatedColors;
         };
-        platformConfig := ?updatedConfig;
+        platformConfigData := ?updatedConfig;
       };
     };
   };
@@ -655,14 +684,14 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
+    switch (platformConfigData) {
       case (null) { Runtime.trap("Platform config not found") };
       case (?config) {
         let updatedWorkTypes = config.workTypes.concat([workType]);
         let updatedConfig = {
           config with workTypes = updatedWorkTypes;
         };
-        platformConfig := ?updatedConfig;
+        platformConfigData := ?updatedConfig;
       };
     };
   };
@@ -672,7 +701,7 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
+    switch (platformConfigData) {
       case (null) { Runtime.trap("Platform config not found") };
       case (?config) {
         let filteredFabrics = config.fabrics.filter(
@@ -681,7 +710,7 @@ actor {
         let updatedConfig = {
           config with fabrics = filteredFabrics;
         };
-        platformConfig := ?updatedConfig;
+        platformConfigData := ?updatedConfig;
       };
     };
   };
@@ -691,7 +720,7 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
+    switch (platformConfigData) {
       case (null) { Runtime.trap("Platform config not found") };
       case (?config) {
         let filteredColors = config.colors.filter(
@@ -700,7 +729,7 @@ actor {
         let updatedConfig = {
           config with colors = filteredColors;
         };
-        platformConfig := ?updatedConfig;
+        platformConfigData := ?updatedConfig;
       };
     };
   };
@@ -710,7 +739,7 @@ actor {
       Runtime.trap("Unauthorized: Only admins can perform this action");
     };
 
-    switch (platformConfig) {
+    switch (platformConfigData) {
       case (null) { Runtime.trap("Platform config not found") };
       case (?config) {
         let filteredWorkTypes = config.workTypes.filter(
@@ -719,7 +748,7 @@ actor {
         let updatedConfig = {
           config with workTypes = filteredWorkTypes;
         };
-        platformConfig := ?updatedConfig;
+        platformConfigData := ?updatedConfig;
       };
     };
   };
@@ -829,4 +858,42 @@ actor {
       backgroundImage = null;
     };
   };
+  // Migration: on first upgrade, migrate legacy config to new format
+  system func postupgrade() {
+    switch (platformConfig) {
+      case (?legacy) {
+        let migratedProducts = legacy.products.map(func(p : ProductLegacy) : Product {
+          {
+            id = p.id;
+            title = p.title;
+            category = p.category;
+            description = p.description;
+            price = p.price;
+            originalPrice = null;
+            discountPrice = null;
+            image = p.image;
+            additionalImages = null;
+            videoUrl = null;
+            tailorId = p.tailorId;
+            customizationOptions = p.customizationOptions;
+            isDeleted = p.isDeleted;
+            reviews = null;
+          }
+        });
+        platformConfigData := ?{
+          products = migratedProducts;
+          fabrics = legacy.fabrics;
+          colors = legacy.colors;
+          workTypes = legacy.workTypes;
+          cities = legacy.cities;
+          promotions = legacy.promotions;
+          banners = legacy.banners;
+        };
+        platformConfig := null;
+      };
+      case null {};
+    };
+  };
+
+
 };

@@ -13,6 +13,7 @@ import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ProductImageSlider } from "../components/ProductImageSlider";
+import { useBackendProducts } from "../hooks/useBackendProducts";
 import { useCart } from "../hooks/useCart";
 import { useLanguage } from "../hooks/useLanguage";
 import { useWishlist } from "../hooks/useWishlist";
@@ -1158,6 +1159,31 @@ export function HomePage() {
   const { language } = useLanguage();
   const CATEGORIES = language === "hi" ? CATEGORIES_HI : CATEGORIES_EN;
 
+  // ── Backend products (merged with mock, backend products shown first) ──
+  const { products: rawBackendProducts } = useBackendProducts();
+  const backendAsMock: MockProduct[] = rawBackendProducts.map((bp) => {
+    const sellingPrice = bp.discountPrice ?? bp.originalPrice ?? bp.price;
+    const mrpPrice = bp.discountPrice
+      ? (bp.originalPrice ?? Math.round(bp.price * 1.3))
+      : Math.round(sellingPrice * 1.3);
+    return {
+      id: bp.id,
+      name: bp.title,
+      nameHi: bp.title,
+      price: sellingPrice,
+      originalPrice: mrpPrice,
+      rating: 4.7,
+      reviews: bp.reviews?.length ?? 0,
+      image: bp.imageUrl || "/assets/uploads/product-jpeg-500x500-1.jpg",
+      category:
+        (bp.category as import("../types/catalog").GarmentCategory) || "Kurtas",
+    };
+  });
+  const allProducts: MockProduct[] =
+    backendAsMock.length > 0
+      ? [...backendAsMock, ...MOCK_PRODUCTS]
+      : MOCK_PRODUCTS;
+
   // Infinite scroll state
   const [visibleCount, setVisibleCount] = useState(8);
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -1182,7 +1208,7 @@ export function HomePage() {
 
   const handleAddToCart = useCallback(
     (productId: string) => {
-      const product = MOCK_PRODUCTS.find((p) => p.id === productId);
+      const product = allProducts.find((p) => p.id === productId);
       if (!product) return;
       addItem(buildListing(product), DEFAULT_CUSTOMIZATION);
       toast.success(
@@ -1191,12 +1217,12 @@ export function HomePage() {
           : `${product.name} added to cart! 🛒`,
       );
     },
-    [addItem, language],
+    [addItem, language, allProducts],
   );
 
   const handleBuyNow = useCallback(
     (productId: string) => {
-      const product = MOCK_PRODUCTS.find((p) => p.id === productId);
+      const product = allProducts.find((p) => p.id === productId);
       if (!product) return;
       const item = {
         listing: buildListing(product),
@@ -1207,7 +1233,7 @@ export function HomePage() {
       } catch {}
       navigate({ to: "/checkout", search: { mode: "buynow" } as any });
     },
-    [navigate],
+    [navigate, allProducts],
   );
 
   return (
@@ -1346,7 +1372,7 @@ export function HomePage() {
         </div>
 
         <div className="flex gap-3 overflow-x-auto snap-scroll px-3 pb-2 scrollbar-none">
-          {MOCK_PRODUCTS.map((product) => (
+          {allProducts.map((product) => (
             <TrendingCard key={product.id} product={product} />
           ))}
           {/* View all card */}
@@ -1429,7 +1455,7 @@ export function HomePage() {
 
         <div className="grid grid-cols-2 gap-3 px-3">
           {Array.from({ length: visibleCount }, (_, i) => {
-            const product = MOCK_PRODUCTS[i % MOCK_PRODUCTS.length];
+            const product = allProducts[i % allProducts.length];
             return (
               <ProductCard
                 key={`${product.id}-${i}`}

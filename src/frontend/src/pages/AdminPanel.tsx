@@ -95,10 +95,12 @@ import type React from "react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ApprovalStatus, ExternalBlob } from "../backend";
+import type { Product as BackendProduct } from "../backend";
 import type { ExtendedOrder as BackendExtendedOrder } from "../backend";
 import { AdminCustomizationPanel } from "../components/AdminCustomizationPanel";
 import { useActor } from "../hooks/useActor";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
+import { getSecretParameter } from "../utils/urlParams";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -2161,22 +2163,45 @@ function TailorsSection({
 
 // ─── Section: Products ────────────────────────────────────────────────────────
 
+// Extended Product type with new optional fields
+interface ExtendedProduct extends BackendProduct {
+  originalPrice?: number | null;
+  discountPrice?: number | null;
+  additionalImages?: ExternalBlob[] | null;
+  videoUrl?: string | null;
+  reviews?: ProductReview[] | null;
+}
+
+interface ProductReview {
+  id: string;
+  userName: string;
+  rating: number;
+  comment: string;
+  createdAt: bigint;
+}
+
 interface ProductFormState {
   title: string;
   category: string;
   description: string;
-  price: string;
-  imageFile: File | null;
-  imagePreview: string;
+  originalPrice: string;
+  discountPrice: string;
+  videoUrl: string;
+  imageFiles: File[];
+  imagePreviews: string[];
+  existingImages: ExternalBlob[];
 }
 
 const EMPTY_PRODUCT_FORM: ProductFormState = {
   title: "",
   category: "",
   description: "",
-  price: "",
-  imageFile: null,
-  imagePreview: "",
+  originalPrice: "",
+  discountPrice: "",
+  videoUrl: "",
+  imageFiles: [],
+  imagePreviews: [],
+  existingImages: [],
 };
 
 function ProductsSection() {
@@ -2184,20 +2209,23 @@ function ProductsSection() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editProduct, setEditProduct] = useState<
-    import("../backend").Product | null
-  >(null);
-  const [deleteTarget, setDeleteTarget] = useState<
-    import("../backend").Product | null
-  >(null);
+  const [editProduct, setEditProduct] = useState<ExtendedProduct | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ExtendedProduct | null>(
+    null,
+  );
   const [form, setForm] = useState<ProductFormState>(EMPTY_PRODUCT_FORM);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
   const [productImages, setProductImages] = useState<Record<string, string>>(
     {},
   );
+  const [reviewForm, setReviewForm] = useState({
+    userName: "",
+    rating: 5,
+    comment: "",
+  });
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  // Load products from backend via getPlatformConfig
   const { data: platformConfig, isLoading } = useQuery({
     queryKey: ["platformConfig"],
     queryFn: async () => {
@@ -2207,21 +2235,25 @@ function ProductsSection() {
     enabled: !!actor,
   });
 
-  const products = (platformConfig?.products ?? []).filter((p) => !p.isDeleted);
+  const products = (
+    (platformConfig?.products ?? []) as ExtendedProduct[]
+  ).filter((p) => !p.isDeleted);
 
-  // Load product images from ExternalBlob URLs
   useEffect(() => {
     for (const product of products) {
-      if (product.image && !productImages[product.id]) {
+      if (product.image) {
         try {
           const url = product.image.getDirectURL();
           if (url) {
-            setProductImages((prev) => ({ ...prev, [product.id]: url }));
+            setProductImages((prev) => {
+              if (prev[product.id]) return prev;
+              return { ...prev, [product.id]: url };
+            });
           }
         } catch {}
       }
     }
-  }, [products, productImages]);
+  }, [products]);
 
   const filtered = products.filter(
     (p) =>
@@ -2229,46 +2261,79 @@ function ProductsSection() {
       p.category?.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      if (ev.target?.result) {
-        setForm((f) => ({
-          ...f,
-          imageFile: file,
-          imagePreview: ev.target!.result as string,
-        }));
-      }
-    };
-    reader.readAsDataURL(file);
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+    const remaining = 5 - form.imageFiles.length - form.existingImages.length;
+    const toAdd = files.slice(0, remaining);
+    const readers = toAdd.map(
+      (file) =>
+        new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target!.result as string);
+          reader.readAsDataURL(file);
+        }),
+    );
+    Promise.all(readers).then((previews) => {
+      setForm((f) => ({
+        ...f,
+        imageFiles: [...f.imageFiles, ...toAdd],
+        imagePreviews: [...f.imagePreviews, ...previews],
+      }));
+    });
     e.target.value = "";
   };
 
+  const removeNewImage = (idx: number) => {
+    setForm((f) => ({
+      ...f,
+      imageFiles: f.imageFiles.filter((_, i) => i !== idx),
+      imagePreviews: f.imagePreviews.filter((_, i) => i !== idx),
+    }));
+  };
+
+  const removeExistingImage = (idx: number) => {
+    setForm((f) => ({
+      ...f,
+      existingImages: f.existingImages.filter((_, i) => i !== idx),
+    }));
+  };
+
   const buildProductFromForm = async (
-    existingProduct?: import("../backend").Product,
-  ): Promise<import("../backend").Product> => {
-    let imageBlob: ExternalBlob;
-    if (form.imageFile) {
-      const arrayBuffer = await form.imageFile.arrayBuffer();
-      imageBlob = ExternalBlob.fromBytes(new Uint8Array(arrayBuffer));
-    } else if (existingProduct?.image) {
-      imageBlob = existingProduct.image;
-    } else {
-      // Placeholder blank image
-      imageBlob = ExternalBlob.fromBytes(new Uint8Array(0));
+    existingProduct?: ExtendedProduct,
+  ): Promise<ExtendedProduct> => {
+    // Build images array: existing + new uploads
+    const allImages: ExternalBlob[] = [...form.existingImages];
+    for (const file of form.imageFiles) {
+      const arrayBuffer = await file.arrayBuffer();
+      allImages.push(ExternalBlob.fromBytes(new Uint8Array(arrayBuffer)));
     }
+
+    let mainImage: ExternalBlob;
+    if (allImages.length > 0) {
+      mainImage = allImages[0];
+    } else if (existingProduct?.image) {
+      mainImage = existingProduct.image;
+    } else {
+      mainImage = ExternalBlob.fromURL(
+        "/assets/uploads/product-jpeg-500x500-1.jpg",
+      );
+    }
+
+    const additionalImages = allImages.length > 1 ? allImages.slice(1) : [];
+    const origPrice = form.originalPrice ? Number(form.originalPrice) : null;
+    const discPrice = form.discountPrice ? Number(form.discountPrice) : null;
+    const salePrice = discPrice ?? origPrice ?? 0;
 
     return {
       id: existingProduct?.id ?? generateId(),
       title: form.title,
       category: form.category,
       description: form.description,
-      price: Number(form.price) || 0,
+      price: salePrice,
       isDeleted: false,
       tailorId: "admin",
-      image: imageBlob,
+      image: mainImage,
       customizationOptions: existingProduct?.customizationOptions ?? {
         sleeveStyles: [],
         colorPatterns: [],
@@ -2276,44 +2341,90 @@ function ProductsSection() {
         fabricTypes: [],
         workTypes: [],
       },
-    };
+      originalPrice: origPrice,
+      discountPrice: discPrice,
+      additionalImages: additionalImages.length > 0 ? additionalImages : null,
+      videoUrl: form.videoUrl || null,
+      reviews: existingProduct?.reviews ?? null,
+    } as ExtendedProduct;
   };
 
   const handleSave = async () => {
-    if (!actor || !form.title || !form.category || !form.price) {
-      toast.error("Please fill in all required fields.");
+    if (!actor || !form.title || !form.category) {
+      toast.error("Title and category are required.");
+      return;
+    }
+    if (!form.originalPrice && !form.discountPrice) {
+      toast.error("Please enter at least one price.");
       return;
     }
     setSaving(true);
     try {
       const product = await buildProductFromForm(editProduct ?? undefined);
       if (editProduct) {
-        await actor.adminUpdateProduct(product);
-        toast.success("Product updated successfully!");
+        await actor.adminUpdateProduct(product as BackendProduct);
+        toast.success("Product updated!");
         logAdminAction("Updated product", "products", product.title);
       } else {
-        await actor.adminAddProduct(product);
-        toast.success("Product added successfully!");
+        await actor.adminAddProduct(product as BackendProduct);
+        toast.success("Product added!");
         logAdminAction("Added product", "products", product.title);
       }
       queryClient.invalidateQueries({ queryKey: ["platformConfig"] });
+      queryClient.invalidateQueries({ queryKey: ["backendProducts"] });
       setShowAddDialog(false);
       setEditProduct(null);
       setForm(EMPTY_PRODUCT_FORM);
-    } catch {
-      toast.error("Failed to save product. Please try again.");
+      setActiveTab("details");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Product save error:", err);
+      toast.error(`Save failed: ${msg}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSoftDelete = async (product: import("../backend").Product) => {
+  const handleAddReview = async () => {
+    if (!actor || !editProduct || !reviewForm.userName || !reviewForm.comment) {
+      toast.error("Fill in all review fields.");
+      return;
+    }
+    const newReview: ProductReview = {
+      id: generateId(),
+      userName: reviewForm.userName,
+      rating: reviewForm.rating,
+      comment: reviewForm.comment,
+      createdAt: BigInt(Date.now()),
+    };
+    const updatedReviews = [...(editProduct.reviews ?? []), newReview];
+    try {
+      await actor.adminUpdateProduct({
+        ...editProduct,
+        reviews: updatedReviews,
+      } as BackendProduct);
+      toast.success("Review added!");
+      setEditProduct((prev) =>
+        prev ? { ...prev, reviews: updatedReviews } : prev,
+      );
+      setReviewForm({ userName: "", rating: 5, comment: "" });
+      queryClient.invalidateQueries({ queryKey: ["platformConfig"] });
+    } catch {
+      toast.error("Failed to add review.");
+    }
+  };
+
+  const handleSoftDelete = async (product: ExtendedProduct) => {
     if (!actor) return;
     try {
-      await actor.adminUpdateProduct({ ...product, isDeleted: true });
-      toast.success(`"${product.title}" removed from listings.`);
+      await actor.adminUpdateProduct({
+        ...product,
+        isDeleted: true,
+      } as BackendProduct);
+      toast.success(`"${product.title}" removed.`);
       logAdminAction("Soft-deleted product", "products", product.title);
       queryClient.invalidateQueries({ queryKey: ["platformConfig"] });
+      queryClient.invalidateQueries({ queryKey: ["backendProducts"] });
     } catch {
       toast.error("Failed to remove product.");
     } finally {
@@ -2321,27 +2432,43 @@ function ProductsSection() {
     }
   };
 
-  const openEdit = (product: import("../backend").Product) => {
+  const openEdit = (product: ExtendedProduct) => {
     setEditProduct(product);
+    const existingImgs: ExternalBlob[] = [];
+    if (product.image) existingImgs.push(product.image);
+    if (product.additionalImages)
+      existingImgs.push(...product.additionalImages);
     setForm({
       title: product.title,
       category: product.category,
       description: product.description,
-      price: String(product.price),
-      imageFile: null,
-      imagePreview: productImages[product.id] ?? "",
+      originalPrice:
+        product.originalPrice != null ? String(product.originalPrice) : "",
+      discountPrice:
+        product.discountPrice != null
+          ? String(product.discountPrice)
+          : String(product.price),
+      videoUrl: product.videoUrl ?? "",
+      imageFiles: [],
+      imagePreviews: [],
+      existingImages: existingImgs,
     });
+    setActiveTab("details");
     setShowAddDialog(true);
   };
 
   const openAdd = () => {
     setEditProduct(null);
     setForm(EMPTY_PRODUCT_FORM);
+    setActiveTab("details");
     setShowAddDialog(true);
   };
 
+  const totalImages = form.existingImages.length + form.imageFiles.length;
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-2xl font-bold">Products & Catalog</h2>
@@ -2366,6 +2493,7 @@ function ProductsSection() {
         </div>
       </div>
 
+      {/* Product Grid */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
@@ -2373,7 +2501,7 @@ function ProductsSection() {
               key={i}
               className="border-0 shadow-md overflow-hidden animate-pulse"
             >
-              <div className="h-40 bg-muted" />
+              <div className="h-44 bg-muted" />
               <CardContent className="p-3 space-y-2">
                 <div className="h-4 bg-muted rounded w-3/4" />
                 <div className="h-3 bg-muted rounded w-1/2" />
@@ -2404,46 +2532,67 @@ function ProductsSection() {
                       alt={product.title}
                       className="w-full h-full object-cover"
                       loading="lazy"
+                      onLoad={() => {}}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="w-12 h-12 text-muted-foreground" />
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                      <Package className="w-10 h-10" />
                     </div>
                   )}
-                  <div className="absolute top-2 right-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {product.category}
+                  {/* Image count badge */}
+                  {(product.additionalImages?.length ?? 0) > 0 && (
+                    <Badge className="absolute bottom-2 left-2 text-xs bg-black/70 text-white border-0">
+                      {1 + (product.additionalImages?.length ?? 0)} photos
                     </Badge>
-                  </div>
-                </div>
-                <CardContent className="p-3">
-                  <p className="font-semibold text-sm truncate">
-                    {product.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
-                    {product.description || "—"}
-                  </p>
-                  <p className="font-bold text-primary mt-1">
-                    {formatCurrency(product.price || 0)}
-                  </p>
-                  <div className="flex gap-1 mt-3">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="flex-1 text-xs"
+                  )}
+                  {/* Review count */}
+                  {(product.reviews?.length ?? 0) > 0 && (
+                    <Badge className="absolute top-2 left-2 text-xs bg-yellow-500/90 text-black border-0 flex items-center gap-1">
+                      <Star className="w-3 h-3" />
+                      {product.reviews!.length}
+                    </Badge>
+                  )}
+                  {/* Action buttons */}
+                  <div className="absolute top-2 right-2 flex gap-1">
+                    <button
+                      type="button"
                       onClick={() => openEdit(product)}
+                      className="p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
                       data-ocid={`products.edit_button.${idx + 1}`}
                     >
-                      <Edit className="w-3 h-3 mr-1" /> Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => setDeleteTarget(product)}
+                      className="p-1.5 rounded-full bg-red-600/80 text-white hover:bg-red-700 transition-colors"
                       data-ocid={`products.delete_button.${idx + 1}`}
                     >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <CardContent className="p-3 space-y-1">
+                  <p className="font-semibold text-sm leading-tight line-clamp-2">
+                    {product.title}
+                  </p>
+                  <Badge variant="outline" className="text-xs">
+                    {product.category}
+                  </Badge>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="font-bold text-sm">
+                      ₹
+                      {(product.discountPrice ?? product.price).toLocaleString(
+                        "en-IN",
+                      )}
+                    </span>
+                    {product.originalPrice != null &&
+                      product.discountPrice != null &&
+                      product.originalPrice !== product.discountPrice && (
+                        <span className="text-xs text-muted-foreground line-through">
+                          ₹{product.originalPrice.toLocaleString("en-IN")}
+                        </span>
+                      )}
                   </div>
                 </CardContent>
               </Card>
@@ -2452,7 +2601,7 @@ function ProductsSection() {
         </div>
       )}
 
-      {/* Add / Edit Product Dialog */}
+      {/* Add/Edit Dialog */}
       <Dialog
         open={showAddDialog}
         onOpenChange={(open) => {
@@ -2460,60 +2609,71 @@ function ProductsSection() {
             setShowAddDialog(false);
             setEditProduct(null);
             setForm(EMPTY_PRODUCT_FORM);
+            setActiveTab("details");
           }
         }}
       >
-        <DialogContent className="max-w-lg" data-ocid="products.dialog">
+        <DialogContent
+          className="max-w-2xl max-h-[90vh] overflow-y-auto"
+          data-ocid="products.dialog"
+        >
           <DialogHeader>
             <DialogTitle>
               {editProduct ? "Edit Product" : "Add New Product"}
             </DialogTitle>
             <DialogDescription>
               {editProduct
-                ? "Update product details"
-                : "Add a new product to the catalog"}
+                ? "Update product details, images, pricing and reviews."
+                : "Fill in product details to add it to the catalog."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="prod-title">
-                Title <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="prod-title"
-                value={form.title}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, title: e.target.value }))
-                }
-                placeholder="e.g. Silk Banarasi Lehenga"
-                data-ocid="products.input"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="prod-price">
-                  Price (₹) <span className="text-destructive">*</span>
-                </Label>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="w-full">
+              <TabsTrigger
+                value="details"
+                className="flex-1"
+                data-ocid="products.tab"
+              >
+                Details
+              </TabsTrigger>
+              <TabsTrigger
+                value="reviews"
+                className="flex-1"
+                disabled={!editProduct}
+                data-ocid="products.tab"
+              >
+                Reviews{" "}
+                {editProduct && (editProduct.reviews?.length ?? 0) > 0
+                  ? `(${editProduct.reviews!.length})`
+                  : ""}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* ── Details Tab ── */}
+            <TabsContent value="details" className="space-y-4 pt-4">
+              {/* Title */}
+              <div className="space-y-1.5">
+                <Label htmlFor="prod-title">Product Title *</Label>
                 <Input
-                  id="prod-price"
-                  type="number"
-                  min="0"
-                  value={form.price}
+                  id="prod-title"
+                  value={form.title}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, price: e.target.value }))
+                    setForm((f) => ({ ...f, title: e.target.value }))
                   }
-                  placeholder="e.g. 2500"
+                  placeholder="e.g. Royal Blue Silk Lehenga Set"
+                  data-ocid="products.input"
                 />
               </div>
-              <div>
-                <Label htmlFor="prod-category">
-                  Category <span className="text-destructive">*</span>
-                </Label>
+
+              {/* Category */}
+              <div className="space-y-1.5">
+                <Label>Category *</Label>
                 <Select
                   value={form.category}
                   onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}
                 >
-                  <SelectTrigger id="prod-category" data-ocid="products.select">
+                  <SelectTrigger data-ocid="products.select">
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -2525,66 +2685,314 @@ function ProductsSection() {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-            <div>
-              <Label htmlFor="prod-desc">Description</Label>
-              <Textarea
-                id="prod-desc"
-                value={form.description}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, description: e.target.value }))
-                }
-                rows={3}
-                placeholder="Describe the product..."
-                data-ocid="products.textarea"
-              />
-            </div>
-            <div>
-              <Label>Product Image</Label>
-              <div className="mt-1 flex items-center gap-3">
-                {form.imagePreview ? (
-                  <img
-                    src={form.imagePreview}
-                    alt="Preview"
-                    className="w-20 h-20 object-cover rounded-lg border"
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <Label htmlFor="prod-desc">Description</Label>
+                <Textarea
+                  id="prod-desc"
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, description: e.target.value }))
+                  }
+                  rows={3}
+                  placeholder="Describe the product, fabric, style..."
+                  data-ocid="products.textarea"
+                />
+              </div>
+
+              {/* Pricing Row */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="prod-orig-price">
+                    Original Price / MRP (₹)
+                  </Label>
+                  <Input
+                    id="prod-orig-price"
+                    type="number"
+                    min="0"
+                    value={form.originalPrice}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, originalPrice: e.target.value }))
+                    }
+                    placeholder="e.g. 4999"
+                    data-ocid="products.input"
                   />
-                ) : (
-                  <div className="w-20 h-20 rounded-lg border bg-muted flex items-center justify-center">
-                    <Package className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                )}
-                <div>
-                  <input
-                    ref={imageInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="prod-disc-price">
+                    Sale / Discount Price (₹) *
+                  </Label>
+                  <Input
+                    id="prod-disc-price"
+                    type="number"
+                    min="0"
+                    value={form.discountPrice}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, discountPrice: e.target.value }))
+                    }
+                    placeholder="e.g. 3499"
+                    data-ocid="products.input"
                   />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => imageInputRef.current?.click()}
-                    data-ocid="products.upload_button"
-                  >
-                    <Upload className="w-3 h-3 mr-1" />
-                    {form.imagePreview ? "Change Image" : "Upload Image"}
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Any format, any size
-                  </p>
                 </div>
               </div>
-            </div>
-          </div>
-          <DialogFooter>
+
+              {/* Video URL */}
+              <div className="space-y-1.5">
+                <Label htmlFor="prod-video">Product Video URL (optional)</Label>
+                <Input
+                  id="prod-video"
+                  value={form.videoUrl}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, videoUrl: e.target.value }))
+                  }
+                  placeholder="YouTube URL or direct video link"
+                  data-ocid="products.input"
+                />
+              </div>
+
+              {/* Images */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Product Images ({totalImages}/5)</Label>
+                  {totalImages < 5 && (
+                    <>
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleImagesChange}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => imageInputRef.current?.click()}
+                        data-ocid="products.upload_button"
+                      >
+                        <Upload className="w-3 h-3 mr-1" />
+                        Add Images
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {totalImages === 0 ? (
+                  <button
+                    type="button"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="w-full h-28 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                    data-ocid="products.dropzone"
+                  >
+                    {totalImages < 5 && (
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={handleImagesChange}
+                      />
+                    )}
+                    <Upload className="w-6 h-6" />
+                    <span className="text-sm">
+                      Click to upload up to 5 images
+                    </span>
+                    <span className="text-xs">First image = main image</span>
+                  </button>
+                ) : (
+                  <div className="grid grid-cols-5 gap-2">
+                    {/* Existing images */}
+                    {form.existingImages.map((img, i) => {
+                      let src = "";
+                      try {
+                        src = img.getDirectURL();
+                      } catch {}
+                      return (
+                        <div
+                          key={i.toString() + src}
+                          className="relative aspect-square rounded-lg overflow-hidden border bg-muted"
+                        >
+                          {src ? (
+                            <img
+                              src={src}
+                              alt={`img-${i}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="w-5 h-5 text-muted-foreground" />
+                            </div>
+                          )}
+                          {i === 0 && (
+                            <Badge className="absolute bottom-0.5 left-0.5 text-[9px] px-1 py-0 bg-primary text-primary-foreground">
+                              Main
+                            </Badge>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeExistingImage(i)}
+                            className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-black/60 text-white hover:bg-black"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {/* New images */}
+                    {form.imagePreviews.map((preview, i) => (
+                      <div
+                        key={preview.slice(0, 20) + String(i)}
+                        className="relative aspect-square rounded-lg overflow-hidden border bg-muted"
+                      >
+                        <img
+                          src={preview}
+                          alt={`new-${i}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {form.existingImages.length === 0 && i === 0 && (
+                          <Badge className="absolute bottom-0.5 left-0.5 text-[9px] px-1 py-0 bg-primary text-primary-foreground">
+                            Main
+                          </Badge>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(i)}
+                          className="absolute top-0.5 right-0.5 p-0.5 rounded-full bg-black/60 text-white hover:bg-black"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                    {/* Add more slot */}
+                    {totalImages < 5 && (
+                      <button
+                        type="button"
+                        onClick={() => imageInputRef.current?.click()}
+                        className="aspect-square rounded-lg border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  First image is used as the main thumbnail on product cards.
+                </p>
+              </div>
+            </TabsContent>
+
+            {/* ── Reviews Tab ── */}
+            <TabsContent value="reviews" className="space-y-4 pt-4">
+              {/* Existing reviews list */}
+              {(editProduct?.reviews?.length ?? 0) === 0 ? (
+                <div
+                  className="text-center py-8 text-muted-foreground"
+                  data-ocid="products.empty_state"
+                >
+                  No reviews yet.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {editProduct!.reviews!.map((review, i) => (
+                    <div
+                      key={review.id}
+                      className="p-3 rounded-lg border bg-muted/40 space-y-1"
+                      data-ocid={`products.item.${i + 1}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-sm">
+                          {review.userName}
+                        </span>
+                        <div className="flex items-center gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`w-3.5 h-3.5 ${s <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {review.comment}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Add review form */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold">Add Review</h4>
+                <div className="space-y-1.5">
+                  <Label htmlFor="rev-name">Reviewer Name</Label>
+                  <Input
+                    id="rev-name"
+                    value={reviewForm.userName}
+                    onChange={(e) =>
+                      setReviewForm((r) => ({ ...r, userName: e.target.value }))
+                    }
+                    placeholder="Customer name"
+                    data-ocid="products.input"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Rating</Label>
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() =>
+                          setReviewForm((r) => ({ ...r, rating: s }))
+                        }
+                        className="p-0.5"
+                      >
+                        <Star
+                          className={`w-6 h-6 ${s <= reviewForm.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="rev-comment">Comment</Label>
+                  <Textarea
+                    id="rev-comment"
+                    value={reviewForm.comment}
+                    onChange={(e) =>
+                      setReviewForm((r) => ({ ...r, comment: e.target.value }))
+                    }
+                    placeholder="Review comment..."
+                    rows={2}
+                    data-ocid="products.textarea"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAddReview}
+                  disabled={!reviewForm.userName || !reviewForm.comment}
+                  data-ocid="products.secondary_button"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> Add Review
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter className="mt-2">
             <Button
               variant="outline"
               onClick={() => {
                 setShowAddDialog(false);
                 setEditProduct(null);
                 setForm(EMPTY_PRODUCT_FORM);
+                setActiveTab("details");
               }}
               data-ocid="products.cancel_button"
             >
@@ -2592,7 +3000,12 @@ function ProductsSection() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !form.title || !form.category || !form.price}
+              disabled={
+                saving ||
+                !form.title ||
+                !form.category ||
+                (!form.originalPrice && !form.discountPrice)
+              }
               data-ocid="products.submit_button"
             >
               {saving ? (
@@ -2609,7 +3022,7 @@ function ProductsSection() {
         </DialogContent>
       </Dialog>
 
-      {/* Soft Delete Confirmation */}
+      {/* Delete Confirmation */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
@@ -2618,8 +3031,8 @@ function ProductsSection() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remove Product?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will hide "{deleteTarget?.title}" from the catalog (soft
-              delete). It can be restored later.
+              This will hide "{deleteTarget?.title}" from the catalog. It can be
+              restored later.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -4830,11 +5243,33 @@ export default function AdminPanel() {
     enabled: !!actor && !!identity && !!isAdmin,
   });
 
-  const handleClaimAdmin = () => {
+  const handleClaimAdmin = async () => {
     setClaimError("");
     if (claimEmail.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
       localStorage.setItem("adminEmail", ADMIN_EMAIL);
       localStorage.setItem("userEmail", ADMIN_EMAIL);
+      // Also initialize backend admin role
+      if (actor) {
+        try {
+          const freshToken = getSecretParameter("caffeineAdminToken");
+          const persistedToken = (() => {
+            try {
+              return localStorage.getItem("caffeineAdminToken_persisted");
+            } catch {
+              return null;
+            }
+          })();
+          const adminToken = freshToken || persistedToken || "";
+          if (freshToken) {
+            try {
+              localStorage.setItem("caffeineAdminToken_persisted", freshToken);
+            } catch {}
+          }
+          await actor._initializeAccessControlWithSecret(adminToken);
+        } catch (e) {
+          console.warn("Backend admin init:", e);
+        }
+      }
       setShowAdminClaim(false);
       window.location.reload();
     } else {

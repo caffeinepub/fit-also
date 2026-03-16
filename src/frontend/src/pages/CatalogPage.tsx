@@ -2,6 +2,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "@tanstack/react-router";
 import { Clock, MapPin, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useBackendProducts } from "../hooks/useBackendProducts";
 import { useCatalog } from "../hooks/useCatalog";
 import { useLanguage } from "../hooks/useLanguage";
 import type { GarmentCategory } from "../types/catalog";
@@ -390,7 +391,43 @@ export function CatalogPage() {
   const [visibleCount, setVisibleCount] = useState(12);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const { products: backendProducts } = useBackendProducts();
+
   const listings = filterListings(activeCategory, search);
+
+  const displayListingsSource =
+    backendProducts.length > 0
+      ? backendProducts
+          .filter(
+            (p) =>
+              (!activeCategory || p.category === activeCategory) &&
+              (!search ||
+                p.title.toLowerCase().includes(search.toLowerCase()) ||
+                p.category.toLowerCase().includes(search.toLowerCase())),
+          )
+          .map((p) => ({
+            id: p.id,
+            tailorId: "fit-also-admin",
+            tailorName: "Fit Also Studio",
+            tailorCity: "India",
+            category: p.category as GarmentCategory,
+            title: p.title,
+            description: p.description,
+            basePrice: p.discountPrice ?? p.originalPrice ?? p.price,
+            originalPrice: p.discountPrice
+              ? (p.originalPrice ?? Math.round(p.price * 1.3))
+              : Math.round(p.price * 1.3),
+            estimatedDays: 14,
+            availableNeckStyles: [] as string[],
+            availableSleeveStyles: [] as string[],
+            availableFabrics: [] as string[],
+            availableColors: [] as string[],
+            availableWorkTypes: [] as string[],
+            imageUrl:
+              p.imageUrl || "/assets/uploads/product-jpeg-500x500-1.jpg",
+            createdAt: Date.now(),
+          }))
+      : listings;
 
   // Infinite scroll — load 8 more when sentinel is visible
   useEffect(() => {
@@ -410,9 +447,9 @@ export function CatalogPage() {
 
   // Build displayListings — cycle infinitely through real or mock data
   const displayListings =
-    listings.length > 0
+    displayListingsSource.length > 0
       ? Array.from({ length: visibleCount }, (_, i) => {
-          const base = listings[i % listings.length];
+          const base = displayListingsSource[i % displayListingsSource.length];
           return { ...base, _key: `${base.id}-${i}` };
         })
       : Array.from({ length: visibleCount }, (_, i) => {
@@ -427,6 +464,7 @@ export function CatalogPage() {
             title: language === "hi" ? mock.nameHi : mock.name,
             description: mock.nameHi,
             basePrice: mock.price,
+            originalPrice: Math.round(mock.price * 1.3),
             estimatedDays: 14,
             availableNeckStyles: [] as string[],
             availableSleeveStyles: [] as string[],
@@ -529,11 +567,31 @@ export function CatalogPage() {
                   {listing.tailorCity}
                 </span>
               </div>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-sm font-bold text-primary">
-                  ₹{listing.basePrice.toLocaleString()}
-                </span>
-                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+              <div className="mt-1">
+                <div className="flex items-baseline gap-1 flex-wrap">
+                  <span className="text-sm font-bold text-foreground">
+                    ₹{listing.basePrice.toLocaleString()}
+                  </span>
+                  {(listing as any).originalPrice &&
+                    (listing as any).originalPrice !== listing.basePrice && (
+                      <span className="text-[10px] text-muted-foreground line-through">
+                        ₹{(listing as any).originalPrice.toLocaleString()}
+                      </span>
+                    )}
+                  {(listing as any).originalPrice &&
+                    (listing as any).originalPrice !== listing.basePrice && (
+                      <span className="text-[9px] font-bold text-green-600 dark:text-green-400">
+                        {Math.round(
+                          (((listing as any).originalPrice -
+                            listing.basePrice) /
+                            (listing as any).originalPrice) *
+                            100,
+                        )}
+                        % OFF
+                      </span>
+                    )}
+                </div>
+                <div className="flex items-center gap-0.5 text-[10px] text-muted-foreground mt-0.5">
                   <Clock className="h-2.5 w-2.5" />
                   <span>{listing.estimatedDays}d</span>
                 </div>

@@ -1,3 +1,7 @@
+import type { ProductReview } from "../hooks/useBackendProducts";
+
+export type { ProductReview };
+
 export type GarmentCategory =
   | "Shirts"
   | "Kurtas"
@@ -64,6 +68,10 @@ export interface ProductListing {
   title: string;
   description: string;
   basePrice: number;
+  /** MRP — shown with strikethrough */
+  originalPrice?: number;
+  /** Selling price — shown bold */
+  discountPrice?: number;
   estimatedDays: number;
   availableNeckStyles: NeckStyle[];
   availableSleeveStyles: SleeveStyle[];
@@ -71,5 +79,11 @@ export interface ProductListing {
   availableColors: ColorPattern[];
   availableWorkTypes: WorkType[];
   imageUrl?: string;
+  /** Additional product images for gallery */
+  additionalImageUrls?: string[];
+  /** Video URL (YouTube or direct) */
+  videoUrl?: string;
+  /** Customer reviews */
+  reviews?: ProductReview[];
   createdAt: number;
 }
